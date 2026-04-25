@@ -29,7 +29,8 @@
 - На почту приходит уведомление о завершении.
 
 ### Нефункциональные
-- Backend: **Go** на **EC2**.
+- Backend: **Go**, запускается **отдельно от AWS** (cloud-agnostic core).
+- Production-размещение backend: **EC2** (через CDK), но код backend не должен быть жестко привязан к AWS SDK/API.
 - Интеграция frontend ↔ backend: **REST** (дополнительно SSE-стрим поверх HTTP для realtime событий).
 - Авторизация: **AWS-managed** (Cognito).
 - Frontend доставка: **CloudFront**.
@@ -43,21 +44,26 @@ flowchart LR
     U[User Browser] --> CF[CloudFront]
     CF --> FE[Frontend SPA]
 
-    FE -->|REST + JWT| API[Go API on EC2]
+    FE -->|REST + JWT| API[Go API core]
     FE -->|SSE /events| API
 
-    API --> COG[AWS Cognito User Pool]
-    API --> DDB[(DynamoDB scans)]
-    API --> S3IN[(S3 input bucket)]
-    API --> S3OUT[(S3 output bucket)]
-    API --> SFN[AWS Step Functions / existing pipeline entry]
-    API --> SES[Amazon SES]
+    API --> AUTH[Auth adapter]
+    API --> DB[(Scan repository adapter)]
+    API --> OBJ[(Object storage adapter)]
+    API --> ORCH[Pipeline orchestration adapter]
+    API --> MAIL[Email notifier adapter]
+
+    AUTH --> COG[AWS Cognito User Pool]
+    DB --> DDB[(DynamoDB)]
+    OBJ --> S3[(Amazon S3)]
+    ORCH --> SFN[AWS Step Functions / existing pipeline entry]
+    MAIL --> SES[Amazon SES]
 
     SFN --> PIPE[Existing 3DGS pipeline]
-    PIPE --> S3OUT
+    PIPE --> S3
     PIPE --> EVT[Pipeline completion/progress events]
     EVT --> API
-    API --> DDB
+    API --> DB
 ```
 
 ### Ключевая идея интеграции
@@ -69,11 +75,16 @@ flowchart LR
 5. обновляет scan state;
 6. уведомляет UI и email.
 
+При этом backend проектируется как **core + adapters**:
+- `core` (домен, use-cases, REST handlers) не зависит от AWS;
+- AWS подключается через адаптеры (Cognito, DynamoDB, S3, SES, Step Functions);
+- для локального/альтернативного запуска можно подменять адаптеры (например, local storage + SMTP/mock notifier + локальный orchestrator client).
+
 ---
 
-## 4) AWS-компоненты (backend-centric)
+## 4) AWS-интеграции для production-контура (backend-centric)
 
-## Обязательные
+## В production (AWS) используем
 - **EC2 (Go API)**
   - REST API, авторизация JWT, бизнес-логика сканов.
   - Launch Template + Auto Scaling (минимум 1 инстанс для старта).
@@ -92,6 +103,16 @@ flowchart LR
   - отдача frontend (S3 static origin или custom origin).
 - **SES (или SNS email topic)**
   - email-уведомления о завершении.
+
+## Важно: автономный запуск backend
+- Backend должен стартовать **без AWS-инфры** (например, локально/в отдельной среде).
+- AWS-сервисы подключаются только через интерфейсы/адаптеры.
+- Минимальный standalone-режим:
+  - auth adapter: local dev JWT/provider;
+  - repository: PostgreSQL/SQLite (или in-memory для dev);
+  - object storage: local filesystem/MinIO;
+  - notifier: SMTP/mock;
+  - pipeline client: HTTP client к уже развернутому pipeline endpoint или stub.
 
 ## Опциональные (рекомендуемые)
 - **EventBridge/SQS** между pipeline callbacks и API для надежной доставки событий.
@@ -224,12 +245,20 @@ Response:
 
 ## 10) Развертывание (целевой контур)
 
+### Режим A — standalone backend (без AWS-зависимостей)
+- Запуск Go-сервиса как обычного приложения (`docker compose`/systemd/Kubernetes).
+- Конфигурация через env (`AUTH_PROVIDER`, `DB_PROVIDER`, `STORAGE_PROVIDER`, `MAIL_PROVIDER`, `PIPELINE_PROVIDER`).
+- Используются не-AWS адаптеры или заглушки.
+
+### Режим B — AWS production (через CDK)
 - Frontend: S3 + CloudFront.
 - Backend: Go service на EC2 за ALB.
 - Auth: Cognito.
 - Data: DynamoDB + S3.
 - Pipeline orchestration: reuse existing deployed 3DGS stack.
 - Notifications: SES (email) + SSE (frontend realtime).
+
+CDK отвечает за инфраструктуру, но backend остается переносимым сервисом с конфигурируемыми адаптерами.
 
 ---
 
@@ -240,11 +269,14 @@ Response:
    - в каком формате получаем прогресс/complete callback.
 2. Сформировать OpenAPI v1 (minimal):
    - `/v1/uploads`, `/v1/scans`, `/v1/scans/{id}`, `/v1/scans/{id}/events`.
-3. Собрать skeleton backend на Go:
-   - HTTP router, JWT middleware, DynamoDB repository, pipeline client, notifier.
-4. Поднять базовый frontend:
+3. Собрать skeleton backend на Go в стиле `core + adapters`:
+   - HTTP router, JWT middleware, интерфейсы портов (`AuthProvider`, `ScanRepository`, `ObjectStorage`, `PipelineClient`, `Notifier`).
+4. Сделать две сборки адаптеров:
+   - `aws` (Cognito/DynamoDB/S3/SES/StepFunctions),
+   - `standalone` (local/pgsql/minio/smtp или mock).
+5. Поднять базовый frontend:
    - login, create scan, list scans, scan details viewer page.
-5. Настроить IaC для Ariadne-инфры (Terraform/CDK).
+6. Настроить IaC для AWS-контура через CDK.
 
 ---
 
