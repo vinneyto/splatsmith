@@ -77,6 +77,8 @@ flowchart LR
 
 При этом backend проектируется как **core + adapters**:
 - `core` (домен, use-cases, REST handlers) не зависит от AWS;
+- бизнес-логика также **не зависит от конкретной базы данных**;
+- доступ к данным идет через порт `ScanRepository` (интерфейс), а конкретная БД подключается адаптером;
 - AWS подключается через адаптеры (Cognito, DynamoDB, S3, SES, Step Functions);
 - для локального/альтернативного запуска можно подменять адаптеры (например, local storage + SMTP/mock notifier + локальный orchestrator client).
 
