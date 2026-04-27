@@ -9,12 +9,17 @@ import (
 )
 
 type authProviderStub struct{}
+type loginProviderStub struct{}
 type jobRepositoryStub struct{}
 type jobDispatcherStub struct{}
 type resultURLResolverStub struct{}
 
 func (s *authProviderStub) ValidateToken(context.Context, string) (core.AuthClaims, error) {
 	return core.AuthClaims{}, fmt.Errorf("aws auth provider: %w", core.ErrNotImplemented)
+}
+
+func (s *loginProviderStub) LoginWithPassword(context.Context, string, string) (core.LoginResult, error) {
+	return core.LoginResult{}, fmt.Errorf("aws login provider: %w", core.ErrNotImplemented)
 }
 
 func (s *jobRepositoryStub) List(context.Context, core.JobListFilter) ([]core.JobSummary, error) {

@@ -14,6 +14,12 @@ cd api
 go run ./cmd/api -config ./config/standalone.yaml
 ```
 
+Standalone dev credentials (from `config/standalone.yaml`):
+
+- username: `dev`
+- password: `devpass`
+- login endpoint: `POST /v1/auth/login`
+
 ## OpenAPI + code generation
 
 - Source of truth: `api/internal/httpapi/openapi/openapi.yaml`

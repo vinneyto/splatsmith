@@ -24,6 +24,29 @@ func (s *APIServer) Healthz(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
+func (s *APIServer) Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
+		return
+	}
+
+	result, err := s.deps.LoginService.LoginWithPassword(r.Context(), req.Username, req.Password)
+	if err != nil {
+		s.writeDomainError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, LoginResponse{
+		AccessToken: result.Token,
+		TokenType:   Bearer,
+		User: AuthUser{
+			UserId: result.User.UserID,
+			Email:  result.User.Email,
+		},
+	})
+}
+
 func (s *APIServer) ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams) {
 	identity, ok := s.authenticate(w, r)
 	if !ok {
@@ -180,7 +203,7 @@ func (s *APIServer) authenticate(w http.ResponseWriter, r *http.Request) (core.U
 
 func (s *APIServer) writeDomainError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, core.ErrUnauthorized), errors.Is(err, core.ErrInvalidToken):
+	case errors.Is(err, core.ErrUnauthorized), errors.Is(err, core.ErrInvalidToken), errors.Is(err, core.ErrInvalidCredentials):
 		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, core.ErrJobNotFound):
 		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: err.Error()})

@@ -13,6 +13,7 @@ import (
 type Dependencies struct {
 	Mode                string
 	AuthService         *services.AuthService
+	LoginService        *services.LoginService
 	JobService          *services.JobService
 	DefaultResultURLTTL time.Duration
 }
@@ -43,6 +44,7 @@ func NewModule(cfg Config, deps Dependencies) *Module {
 		openapiJSON: jsonSpec,
 	}
 	m.engine.Use(gin.Recovery())
+	m.engine.Use(corsMiddleware())
 	m.routes()
 	return m
 }

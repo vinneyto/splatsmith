@@ -160,8 +160,10 @@ It is mode-agnostic and can be used in:
 - `GET /healthz` — liveness + current runtime mode.
 - `GET /openapi.yaml` — source OpenAPI 3.0 spec served by API.
 - `GET /openapi.json` — JSON view of the same OpenAPI spec.
-- `GET /docs` — redirects to Scalar API docs.
-- `GET /scalar/*` — Scalar UI static route (served by Gin + embedded FS).
+- `GET /docs` — redirects to Scalar UI entrypoint.
+- `GET /scalar/*` — public Scalar docs static route (served by Gin + embedded FS).
+- `GET /scalar/` — Scalar API Reference entrypoint (loads `/openapi.yaml`).
+- `POST /v1/auth/login` — standalone username/password login.
 - `GET /v1/jobs?limit=20&offset=0` — list current user jobs.
 - `POST /v1/jobs` — async job submission with idempotency (`idempotency_key`).
 - `GET /v1/jobs/{job_id}` — job details (`status`, `progress_percent`, steps, attempt).
