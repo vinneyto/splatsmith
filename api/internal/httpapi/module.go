@@ -190,8 +190,13 @@ func (m *Module) writeDomainError(w http.ResponseWriter, err error) {
 }
 
 func loadOpenAPISpec(path string) ([]byte, []byte) {
-	yamlSpec, err := os.ReadFile(path)
-	if err != nil {
+	yamlSpec := embeddedOpenAPIYAML
+	if len(yamlSpec) == 0 {
+		if fromFile, err := os.ReadFile(path); err == nil {
+			yamlSpec = fromFile
+		}
+	}
+	if len(yamlSpec) == 0 {
 		fallback := []byte("openapi: 3.0.3\ninfo:\n  title: Splatmaker API\n  version: 0.1.0\npaths: {}\n")
 		return fallback, []byte(`{"openapi":"3.0.3","info":{"title":"Splatmaker API","version":"0.1.0"},"paths":{}}`)
 	}
