@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/vinneyto/ariadne/api/internal/app"
-	"github.com/vinneyto/ariadne/api/internal/httpapi"
+	"github.com/vinneyto/splatsmith/api/internal/app"
+	"github.com/vinneyto/splatsmith/api/internal/httpapi"
 )
 
 func main() {
@@ -57,11 +57,11 @@ func main() {
 		}
 	}()
 
-	log.Printf("ariadne api started on %s (mode=%s)", srv.Addr, runtime.Mode)
+	log.Printf("splatsmith api started on %s (mode=%s)", srv.Addr, runtime.Mode)
 	log.Printf("docs: http://localhost%s/docs | openapi: http://localhost%s/openapi.json", srv.Addr, srv.Addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("listen and serve: %v", err)
 	}
 
-	log.Printf("ariadne api stopped")
+	log.Printf("splatsmith api stopped")
 }

@@ -1,6 +1,6 @@
 package aws
 
-import "github.com/vinneyto/ariadne/api/internal/core"
+import "github.com/vinneyto/splatsmith/api/internal/core"
 
 type Module struct {
 	AuthProvider      core.AuthProvider

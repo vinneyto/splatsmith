@@ -9,7 +9,7 @@ func buildOpenAPISpecJSON(mode string, defaultTTLSeconds int) []byte {
 	spec := fmt.Sprintf(`{
   "openapi": "3.1.0",
   "info": {
-    "title": "Ariadne API",
+    "title": "Splatsmith API",
     "version": "0.1.0",
     "description": "Core-first API module. Works in standalone mode and is reusable by AWS adapters."
   },
@@ -130,7 +130,7 @@ func buildOpenAPISpecJSON(mode string, defaultTTLSeconds int) []byte {
       }
     }
   },
-  "x-ariadne-runtime": {
+  "x-splatsmith-runtime": {
     "mode": %q
   }
 }

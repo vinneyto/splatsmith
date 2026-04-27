@@ -3,7 +3,7 @@ package standalone
 import (
 	"context"
 
-	"github.com/vinneyto/ariadne/api/internal/core"
+	"github.com/vinneyto/splatsmith/api/internal/core"
 )
 
 type DevAuthProvider struct {

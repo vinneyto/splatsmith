@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/vinneyto/ariadne/api/internal/core"
+	"github.com/vinneyto/splatsmith/api/internal/core"
 )
 
 type AuthService struct {

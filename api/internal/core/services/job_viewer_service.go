@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/vinneyto/ariadne/api/internal/core"
+	"github.com/vinneyto/splatsmith/api/internal/core"
 )
 
 type JobViewerService struct {

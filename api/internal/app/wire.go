@@ -3,9 +3,9 @@ package app
 import (
 	"fmt"
 
-	"github.com/vinneyto/ariadne/api/internal/aws"
-	"github.com/vinneyto/ariadne/api/internal/core/services"
-	"github.com/vinneyto/ariadne/api/internal/standalone"
+	"github.com/vinneyto/splatsmith/api/internal/aws"
+	"github.com/vinneyto/splatsmith/api/internal/core/services"
+	"github.com/vinneyto/splatsmith/api/internal/standalone"
 )
 
 type Runtime struct {

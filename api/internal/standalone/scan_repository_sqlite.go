@@ -11,7 +11,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/vinneyto/ariadne/api/internal/core"
+	"github.com/vinneyto/splatsmith/api/internal/core"
 )
 
 type SQLiteJobRepository struct {

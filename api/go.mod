@@ -1,4 +1,4 @@
-module github.com/vinneyto/ariadne/api
+module github.com/vinneyto/splatsmith/api
 
 go 1.22
 
