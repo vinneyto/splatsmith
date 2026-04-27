@@ -3,16 +3,18 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
+	"net/http"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/vinneyto/ariadne/api/internal/app"
+	"github.com/vinneyto/ariadne/api/internal/httpapi"
 )
 
 func main() {
 	configPath := flag.String("config", "./config/standalone.yaml", "path to YAML config")
-	token := flag.String("token", "dev-token", "token for startup auth probe")
 	flag.Parse()
 
 	cfg, err := app.LoadConfig(*configPath)
@@ -30,30 +32,36 @@ func main() {
 		}
 	}()
 
-	identity, err := runtime.AuthService.Authenticate(context.Background(), "Bearer "+*token)
-	if err != nil {
-		log.Printf("startup auth probe failed (expected for aws stubs): %v", err)
-		fmt.Printf("api bootstrap is ready (mode=%s)\n", runtime.Mode)
-		return
+	apiModule := httpapi.NewModule(cfg.API, httpapi.Dependencies{
+		Mode:                string(runtime.Mode),
+		AuthService:         runtime.AuthService,
+		JobViewer:           runtime.JobViewer,
+		DefaultResultURLTTL: time.Duration(runtime.ResultURLTTL) * time.Second,
+	})
+
+	srv := &http.Server{
+		Addr:              apiModule.ListenAddr(),
+		Handler:           apiModule.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	jobs, err := runtime.JobViewer.ListJobs(context.Background(), identity.UserID, 20, 0)
-	if err != nil {
-		log.Printf("job list failed (expected for aws stubs): %v", err)
-		fmt.Printf("api bootstrap is ready (mode=%s)\n", runtime.Mode)
-		return
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("http shutdown error: %v", err)
+		}
+	}()
+
+	log.Printf("ariadne api started on %s (mode=%s)", srv.Addr, runtime.Mode)
+	log.Printf("docs: http://localhost%s/docs | openapi: http://localhost%s/openapi.json", srv.Addr, srv.Addr)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("listen and serve: %v", err)
 	}
 
-	fmt.Printf("api bootstrap is ready (mode=%s, user=%s, jobs=%d)\n", runtime.Mode, identity.UserID, len(jobs))
-	for _, job := range jobs {
-		urls, err := runtime.JobViewer.GetJobResultURLs(context.Background(), identity.UserID, job.JobID, time.Duration(runtime.ResultURLTTL)*time.Second)
-		if err != nil {
-			log.Printf("resolve urls for job %s failed: %v", job.JobID, err)
-			continue
-		}
-		fmt.Printf("- job=%s status=%s files=%d\n", job.JobID, job.Status, len(urls))
-		for _, u := range urls {
-			fmt.Printf("  * %s -> %s\n", u.FileName, u.URL)
-		}
-	}
+	log.Printf("ariadne api stopped")
 }

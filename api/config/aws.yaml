@@ -1,4 +1,6 @@
 mode: aws
+api:
+  listen_addr: :8080
 aws:
   region: eu-central-1
   user_pool_id: TODO

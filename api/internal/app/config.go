@@ -7,6 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/vinneyto/ariadne/api/internal/aws"
+	"github.com/vinneyto/ariadne/api/internal/httpapi"
 	"github.com/vinneyto/ariadne/api/internal/standalone"
 )
 
@@ -19,6 +20,7 @@ const (
 
 type Config struct {
 	Mode       Mode              `yaml:"mode"`
+	API        httpapi.Config    `yaml:"api"`
 	Standalone standalone.Config `yaml:"standalone"`
 	AWS        aws.Config        `yaml:"aws"`
 }
