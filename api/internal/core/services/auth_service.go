@@ -1,30 +1,32 @@
-package core
+package services
 
 import (
 	"context"
 	"strings"
+
+	"github.com/vinneyto/ariadne/api/internal/core"
 )
 
 type AuthService struct {
-	authProvider AuthProvider
+	authProvider core.AuthProvider
 }
 
-func NewAuthService(authProvider AuthProvider) *AuthService {
+func NewAuthService(authProvider core.AuthProvider) *AuthService {
 	return &AuthService{authProvider: authProvider}
 }
 
-func (s *AuthService) Authenticate(ctx context.Context, authorizationHeader string) (UserIdentity, error) {
+func (s *AuthService) Authenticate(ctx context.Context, authorizationHeader string) (core.UserIdentity, error) {
 	token := extractBearerToken(authorizationHeader)
 	if token == "" {
-		return UserIdentity{}, ErrUnauthorized
+		return core.UserIdentity{}, core.ErrUnauthorized
 	}
 
 	claims, err := s.authProvider.ValidateToken(ctx, token)
 	if err != nil {
-		return UserIdentity{}, ErrInvalidToken
+		return core.UserIdentity{}, core.ErrInvalidToken
 	}
 
-	return UserIdentity{UserID: claims.UserID, Email: claims.Email}, nil
+	return core.UserIdentity{UserID: claims.UserID, Email: claims.Email}, nil
 }
 
 func extractBearerToken(header string) string {

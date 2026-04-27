@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/vinneyto/ariadne/api/internal/aws"
-	"github.com/vinneyto/ariadne/api/internal/core"
+	"github.com/vinneyto/ariadne/api/internal/core/services"
 	"github.com/vinneyto/ariadne/api/internal/standalone"
 )
 
 type Runtime struct {
 	Mode         Mode
-	AuthService  *core.AuthService
-	JobViewer    *core.JobViewerService
+	AuthService  *services.AuthService
+	JobViewer    *services.JobViewerService
 	ResultURLTTL int
 	Close        func() error
 }
@@ -29,8 +29,8 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 		}
 		return &Runtime{
 			Mode:         cfg.Mode,
-			AuthService:  core.NewAuthService(module.AuthProvider),
-			JobViewer:    core.NewJobViewerService(module.JobRepository, module.ResultURLResolver),
+			AuthService:  services.NewAuthService(module.AuthProvider),
+			JobViewer:    services.NewJobViewerService(module.JobRepository, module.ResultURLResolver),
 			ResultURLTTL: ttl,
 			Close:        module.Close,
 		}, nil
@@ -41,8 +41,8 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 		}
 		return &Runtime{
 			Mode:         cfg.Mode,
-			AuthService:  core.NewAuthService(module.AuthProvider),
-			JobViewer:    core.NewJobViewerService(module.JobRepository, module.ResultURLResolver),
+			AuthService:  services.NewAuthService(module.AuthProvider),
+			JobViewer:    services.NewJobViewerService(module.JobRepository, module.ResultURLResolver),
 			ResultURLTTL: 900,
 			Close: func() error {
 				_ = module
