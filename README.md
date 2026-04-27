@@ -1,12 +1,12 @@
-# Ariadne — manage 3D reconstruction and view results
+# Splatsmith — manage 3D reconstruction and view results
 
 ## 1) Project goal
 
-`Ariadne` is a product layer built on top of an already deployed and validated AWS reconstruction pipeline from the repository:
+`Splatsmith` is a product layer built on top of an already deployed and validated AWS reconstruction pipeline from the repository:
 
 `guidance-for-open-source-3d-reconstruction-toolbox-for-gaussian-splats-on-aws`
 
-Ariadne’s mission:
+Splatsmith’s mission:
 - provide a simple UX: **upload video → wait for processing → view result**;
 - provide a backend/API to manage reconstruction jobs;
 - provide notifications:
@@ -67,7 +67,7 @@ flowchart LR
 ```
 
 ### Core integration idea
-`Ariadne` does **not reinvent** the compute pipeline. It orchestrates the existing pipeline layer:
+`Splatsmith` does **not reinvent** the compute pipeline. It orchestrates the existing pipeline layer:
 1. creates a scan record;
 2. accepts upload/video reference;
 3. starts pipeline execution (via Step Functions/S3 job trigger, depending on current entry point);
@@ -285,7 +285,7 @@ CDK provisions infrastructure, while backend remains a portable service with con
 ## 12) Responsibility boundaries
 
 - Existing 3DGS pipeline is responsible for reconstruction computation.
-- Ariadne is responsible for:
+- Splatsmith is responsible for:
   - user-facing product API,
   - ownership and access to scans,
   - lifecycle/status/progress,
