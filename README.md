@@ -145,10 +145,28 @@ At the same time, backend is designed as **core + adapters**:
 ## 6) REST API (v1)
 
 ## Auth
-- `Authorization: Bearer *** from Cognito>`
-- All `/v1/scans/*` endpoints are scoped to current user.
+- `Authorization: Bearer <token>`
+- User scoping is enforced in service layer via authenticated identity (`user_id`).
 
-## Endpoints
+## Implemented API module (current skeleton)
+
+A dedicated reusable HTTP/OpenAPI module exists in `api/internal/httpapi`.
+It is mode-agnostic and can be used in:
+- standalone runtime (`mode: standalone`),
+- AWS runtime (`mode: aws`) with cloud adapters.
+
+### Currently implemented endpoints
+
+- `GET /healthz` — liveness + current runtime mode.
+- `GET /openapi.yaml` — source OpenAPI 3.0 spec served by API.
+- `GET /openapi.json` — JSON view of the same OpenAPI spec.
+- `GET /docs` — redirects to Swagger UI entrypoint.
+- `GET /swagger/*` — public Swagger UI static route (served by Gin + embedded FS).
+- `GET /swagger/` — Swagger UI entrypoint (loads `/openapi.yaml`).
+- `GET /v1/jobs?limit=20&offset=0` — list current user jobs.
+- `GET /v1/jobs/{job_id}/result-urls?ttl_seconds=900` — resolve downloadable result URLs for a job.
+
+## Target product endpoints (next iterations)
 
 ### Create scan
 `POST /v1/scans`
@@ -183,10 +201,6 @@ Response:
   - `scan.progress`
   - `scan.completed`
   - `scan.failed`
-
-### Public API docs
-`GET /docs`
-- OpenAPI 3.1 + Swagger UI/ReDoc (public).
 
 ---
 
@@ -269,10 +283,10 @@ CDK provisions infrastructure, while backend remains a portable service with con
 1. Finalize integration contract with the current pipeline:
    - where jobs are started,
    - format of progress/complete callbacks.
-2. Prepare minimal OpenAPI v1:
+2. Expand the already implemented OpenAPI module (`openapi.yaml` + oapi-codegen, `/openapi.yaml`, `/openapi.json`, `/docs`) to product v1:
    - `/v1/uploads`, `/v1/scans`, `/v1/scans/{id}`, `/v1/scans/{id}/events`.
-3. Build Go backend skeleton in `core + adapters` style:
-   - HTTP router, JWT middleware, port interfaces (`AuthProvider`, `ScanRepository`, `ObjectStorage`, `PipelineClient`, `Notifier`).
+3. Extend Go backend skeleton in `core + adapters` style:
+   - HTTP router, JWT middleware, and additional port interfaces (`ScanRepository`, `ObjectStorage`, `PipelineClient`, `Notifier`).
 4. Implement two adapter bundles:
    - `aws` (Cognito/DynamoDB/S3/SES/StepFunctions),
    - `standalone` (local/pgsql/minio/smtp or mock).
