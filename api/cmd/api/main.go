@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/vinneyto/splatra/api/internal/app"
-	"github.com/vinneyto/splatra/api/internal/httpapi"
+	"github.com/vinneyto/splatmaker/api/internal/app"
+	"github.com/vinneyto/splatmaker/api/internal/httpapi"
 )
 
 func main() {
@@ -57,11 +57,11 @@ func main() {
 		}
 	}()
 
-	log.Printf("splatra api started on %s (mode=%s)", srv.Addr, runtime.Mode)
+	log.Printf("splatmaker api started on %s (mode=%s)", srv.Addr, runtime.Mode)
 	log.Printf("docs: http://localhost%s/docs | openapi: http://localhost%s/openapi.json", srv.Addr, srv.Addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("listen and serve: %v", err)
 	}
 
-	log.Printf("splatra api stopped")
+	log.Printf("splatmaker api stopped")
 }

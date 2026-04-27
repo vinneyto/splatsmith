@@ -3,7 +3,7 @@ package standalone
 import (
 	"context"
 
-	"github.com/vinneyto/splatra/api/internal/core"
+	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
 type DevAuthProvider struct {

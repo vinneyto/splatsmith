@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/vinneyto/splatra/api/internal/core"
+	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
 type AuthService struct {

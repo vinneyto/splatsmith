@@ -6,9 +6,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/vinneyto/splatra/api/internal/aws"
-	"github.com/vinneyto/splatra/api/internal/httpapi"
-	"github.com/vinneyto/splatra/api/internal/standalone"
+	"github.com/vinneyto/splatmaker/api/internal/aws"
+	"github.com/vinneyto/splatmaker/api/internal/httpapi"
+	"github.com/vinneyto/splatmaker/api/internal/standalone"
 )
 
 type Mode string

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/vinneyto/splatra/api/internal/core"
-	"github.com/vinneyto/splatra/api/internal/core/services"
+	"github.com/vinneyto/splatmaker/api/internal/core"
+	"github.com/vinneyto/splatmaker/api/internal/core/services"
 )
 
 type Dependencies struct {
@@ -75,7 +75,7 @@ func (m *Module) handleDocs(w http.ResponseWriter, _ *http.Request) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Splatra API Docs</title>
+    <title>Splatmaker API Docs</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
     <style>body { margin: 0; }</style>
   </head>
