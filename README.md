@@ -160,10 +160,13 @@ It is mode-agnostic and can be used in:
 - `GET /healthz` — liveness + current runtime mode.
 - `GET /openapi.yaml` — source OpenAPI 3.0 spec served by API.
 - `GET /openapi.json` — JSON view of the same OpenAPI spec.
-- `GET /docs` — redirects to Swagger UI entrypoint.
-- `GET /swagger/*` — public Swagger UI static route (served by Gin + embedded FS).
-- `GET /swagger/` — Swagger UI entrypoint (loads `/openapi.yaml`).
+- `GET /docs` — redirects to Scalar API docs.
+- `GET /scalar/*` — Scalar UI static route (served by Gin + embedded FS).
 - `GET /v1/jobs?limit=20&offset=0` — list current user jobs.
+- `POST /v1/jobs` — async job submission with idempotency (`idempotency_key`).
+- `GET /v1/jobs/{job_id}` — job details (`status`, `progress_percent`, steps, attempt).
+- `POST /v1/jobs/{job_id}/cancel` — cancel queued/running job.
+- `POST /v1/jobs/{job_id}/retry` — retry failed/cancelled job.
 - `GET /v1/jobs/{job_id}/result-urls?ttl_seconds=900` — resolve downloadable result URLs for a job.
 
 ## Target product endpoints (next iterations)

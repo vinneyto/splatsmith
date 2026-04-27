@@ -30,7 +30,7 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 		return &Runtime{
 			Mode:         cfg.Mode,
 			AuthService:  services.NewAuthService(module.AuthProvider),
-			JobService:   services.NewJobService(module.JobRepository, module.ResultURLResolver),
+			JobService:   services.NewJobService(module.JobRepository, module.JobDispatcher, module.ResultURLResolver),
 			ResultURLTTL: ttl,
 			Close:        module.Close,
 		}, nil
@@ -42,7 +42,7 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 		return &Runtime{
 			Mode:         cfg.Mode,
 			AuthService:  services.NewAuthService(module.AuthProvider),
-			JobService:   services.NewJobService(module.JobRepository, module.ResultURLResolver),
+			JobService:   services.NewJobService(module.JobRepository, module.JobDispatcher, module.ResultURLResolver),
 			ResultURLTTL: 900,
 			Close: func() error {
 				_ = module

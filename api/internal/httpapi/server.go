@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -55,15 +56,83 @@ func (s *APIServer) ListJobs(w http.ResponseWriter, r *http.Request, params List
 
 	respItems := make([]JobSummary, 0, len(items))
 	for _, j := range items {
-		respItems = append(respItems, JobSummary{
-			JobId:     j.JobID,
-			Status:    JobSummaryStatus(j.Status),
-			CreatedAt: j.CreatedAt.UTC(),
-			UpdatedAt: j.UpdatedAt.UTC(),
-		})
+		respItems = append(respItems, toAPISummary(j))
 	}
 
 	writeJSON(w, http.StatusOK, ListJobsResponse{Items: respItems})
+}
+
+func (s *APIServer) SubmitJob(w http.ResponseWriter, r *http.Request) {
+	identity, ok := s.authenticate(w, r)
+	if !ok {
+		return
+	}
+
+	var req SubmitJobJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid json body"})
+		return
+	}
+
+	submit, err := s.deps.JobService.SubmitJob(r.Context(), identity.UserID, core.SubmitJobRequest{
+		IdempotencyKey: req.IdempotencyKey,
+		Name:           req.Name,
+		SourceRef:      req.SourceRef,
+		SimulateFailure: func() bool {
+			if req.SimulateFailure == nil {
+				return false
+			}
+			return *req.SimulateFailure
+		}(),
+	})
+	if err != nil {
+		s.writeDomainError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusAccepted, SubmitJobResponse{
+		Created: submit.Created,
+		Job:     toAPIDetails(submit.Job),
+	})
+}
+
+func (s *APIServer) GetJob(w http.ResponseWriter, r *http.Request, jobID string) {
+	identity, ok := s.authenticate(w, r)
+	if !ok {
+		return
+	}
+	item, err := s.deps.JobService.GetJob(r.Context(), identity.UserID, jobID)
+	if err != nil {
+		s.writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toAPIDetails(*item))
+}
+
+func (s *APIServer) CancelJob(w http.ResponseWriter, r *http.Request, jobID string) {
+	identity, ok := s.authenticate(w, r)
+	if !ok {
+		return
+	}
+	item, err := s.deps.JobService.CancelJob(r.Context(), identity.UserID, jobID)
+	if err != nil {
+		s.writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, JobMutationResponse{Job: toAPIDetails(*item)})
+}
+
+func (s *APIServer) RetryJob(w http.ResponseWriter, r *http.Request, jobID string) {
+	identity, ok := s.authenticate(w, r)
+	if !ok {
+		return
+	}
+	item, err := s.deps.JobService.RetryJob(r.Context(), identity.UserID, jobID)
+	if err != nil {
+		s.writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, JobMutationResponse{Job: toAPIDetails(*item)})
 }
 
 func (s *APIServer) GetJobResultUrls(w http.ResponseWriter, r *http.Request, jobID string, params GetJobResultUrlsParams) {
@@ -115,9 +184,60 @@ func (s *APIServer) writeDomainError(w http.ResponseWriter, err error) {
 		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, core.ErrJobNotFound):
 		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: err.Error()})
+	case errors.Is(err, core.ErrIdempotencyKeyRequired), errors.Is(err, core.ErrInvalidArgument):
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+	case errors.Is(err, core.ErrJobNotCancelable), errors.Is(err, core.ErrJobNotRetryable), errors.Is(err, core.ErrConflict):
+		writeJSON(w, http.StatusConflict, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, core.ErrNotImplemented):
 		writeJSON(w, http.StatusNotImplemented, ErrorResponse{Error: err.Error()})
 	default:
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
 	}
+}
+
+func toAPISummary(j core.JobSummary) JobSummary {
+	return JobSummary{
+		JobId:           j.JobID,
+		Status:          JobStatus(j.Status),
+		ProgressPercent: j.ProgressPercent,
+		CurrentStep:     j.CurrentStep,
+		IdempotencyKey:  j.IdempotencyKey,
+		CreatedAt:       j.CreatedAt.UTC(),
+		UpdatedAt:       j.UpdatedAt.UTC(),
+	}
+}
+
+func toAPIDetails(j core.JobDetails) JobDetails {
+	outputs := make([]OutputFileRef, 0, len(j.OutputFiles))
+	for _, o := range j.OutputFiles {
+		var size *int
+		if o.SizeBytes != nil {
+			x := int(*o.SizeBytes)
+			size = &x
+		}
+		outputs = append(outputs, OutputFileRef{
+			Key:       o.Key,
+			FileName:  o.FileName,
+			SizeBytes: size,
+		})
+	}
+	return JobDetails{
+		Summary:         toAPISummary(j.Summary),
+		Attempt:         j.Attempt,
+		SourceRef:       j.SourceRef,
+		SimulateFailure: j.SimulateFailure,
+		ErrorMessage:    j.ErrorMessage,
+		StartedAt:       utcPtr(j.StartedAt),
+		FinishedAt:      utcPtr(j.FinishedAt),
+		LastHeartbeatAt: utcPtr(j.LastHeartbeatAt),
+		OutputFiles:     outputs,
+	}
+}
+
+func utcPtr(v *time.Time) *time.Time {
+	if v == nil {
+		return nil
+	}
+	u := v.UTC()
+	return &u
 }

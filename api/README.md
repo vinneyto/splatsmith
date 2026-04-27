@@ -32,5 +32,5 @@ go generate ./...
 
 ## Modes
 
-- `standalone` — uses SQLite and local adapters for development
-- `aws` — currently uses placeholders and returns not-implemented behavior
+- `standalone` — uses SQLite, idempotent async jobs, and simulated background execution for development
+- `aws` — currently uses placeholders and returns not-implemented behavior for orchestration ports
