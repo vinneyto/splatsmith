@@ -1,6 +1,7 @@
 mode: aws
 api:
   listen_addr: :8080
+  openapi_path: ./openapi.yaml
 aws:
   region: eu-central-1
   user_pool_id: TODO

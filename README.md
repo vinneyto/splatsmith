@@ -158,8 +158,9 @@ It is mode-agnostic and can be used in:
 ### Currently implemented endpoints
 
 - `GET /healthz` — liveness + current runtime mode.
-- `GET /openapi.json` — OpenAPI 3.1 spec served by API.
-- `GET /docs` — Swagger UI served by API (loads `/openapi.json`).
+- `GET /openapi.yaml` — source OpenAPI 3.0 spec served by API.
+- `GET /openapi.json` — JSON view of the same OpenAPI spec.
+- `GET /docs` — Swagger UI served by API (loads `/openapi.yaml`).
 - `GET /v1/jobs?limit=20&offset=0` — list current user jobs.
 - `GET /v1/jobs/{job_id}/result-urls?ttl_seconds=900` — resolve downloadable result URLs for a job.
 
@@ -280,7 +281,7 @@ CDK provisions infrastructure, while backend remains a portable service with con
 1. Finalize integration contract with the current pipeline:
    - where jobs are started,
    - format of progress/complete callbacks.
-2. Expand the already implemented OpenAPI module (`/openapi.json`, `/docs`) to product v1:
+2. Expand the already implemented OpenAPI module (`openapi.yaml` + oapi-codegen, `/openapi.yaml`, `/openapi.json`, `/docs`) to product v1:
    - `/v1/uploads`, `/v1/scans`, `/v1/scans/{id}`, `/v1/scans/{id}/events`.
 3. Extend Go backend skeleton in `core + adapters` style:
    - HTTP router, JWT middleware, and additional port interfaces (`ScanRepository`, `ObjectStorage`, `PipelineClient`, `Notifier`).

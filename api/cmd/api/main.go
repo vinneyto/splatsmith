@@ -58,7 +58,7 @@ func main() {
 	}()
 
 	log.Printf("splatmaker api started on %s (mode=%s)", srv.Addr, runtime.Mode)
-	log.Printf("docs: http://localhost%s/docs | openapi: http://localhost%s/openapi.json", srv.Addr, srv.Addr)
+	log.Printf("docs: http://localhost%s/docs | openapi: http://localhost%s/openapi.yaml", srv.Addr, srv.Addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("listen and serve: %v", err)
 	}

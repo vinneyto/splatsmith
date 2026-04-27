@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: Splatmaker API
+  version: 0.1.0
+  description: Core-first API module. Works in standalone mode and is reusable by AWS adapters.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, mode]
+      properties:
+        status:
+          type: string
+        mode:
+          type: string
+    JobSummary:
+      type: object
+      required: [job_id, status, created_at, updated_at]
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [new, in_progress, done, failed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ListJobsResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobSummary'
+    ResultFileURL:
+      type: object
+      required: [key, file_name, url, expires_at]
+      properties:
+        key:
+          type: string
+        file_name:
+          type: string
+        url:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    JobResultURLsResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultFileURL'
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /v1/jobs:
+    get:
+      operationId: listJobs
+      summary: List current user jobs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 200
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Jobs list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListJobsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/jobs/{job_id}/result-urls:
+    get:
+      operationId: getJobResultUrls
+      summary: Resolve result file URLs for a job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ttl_seconds
+          in: query
+          schema:
+            type: integer
+            default: 900
+            minimum: 1
+      responses:
+        '200':
+          description: Result URLs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResultURLsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+x-splatmaker-runtime:
+  mode: standalone

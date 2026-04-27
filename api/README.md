@@ -14,6 +14,19 @@ cd api
 go run ./cmd/api -config ./config/standalone.yaml
 ```
 
+## OpenAPI + code generation
+
+- Source of truth: `api/openapi.yaml`
+- Generator config: `api/oapi-codegen.yaml`
+- Generated file: `api/internal/httpapi/openapi_gen.go`
+
+Regenerate after spec changes:
+
+```bash
+cd api/internal/httpapi
+go generate ./...
+```
+
 ## Modes
 
 - `standalone` — uses SQLite and local adapters for development
