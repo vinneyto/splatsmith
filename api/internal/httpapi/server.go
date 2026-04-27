@@ -47,7 +47,7 @@ func (s *APIServer) ListJobs(w http.ResponseWriter, r *http.Request, params List
 		offset = 0
 	}
 
-	items, err := s.deps.JobViewer.ListJobs(r.Context(), identity.UserID, limit, offset)
+	items, err := s.deps.JobService.ListJobs(r.Context(), identity.UserID, limit, offset)
 	if err != nil {
 		s.writeDomainError(w, err)
 		return
@@ -82,7 +82,7 @@ func (s *APIServer) GetJobResultUrls(w http.ResponseWriter, r *http.Request, job
 		ttlSeconds = *params.TtlSeconds
 	}
 
-	urls, err := s.deps.JobViewer.GetJobResultURLs(r.Context(), identity.UserID, jobID, time.Duration(ttlSeconds)*time.Second)
+	urls, err := s.deps.JobService.GetJobResultURLs(r.Context(), identity.UserID, jobID, time.Duration(ttlSeconds)*time.Second)
 	if err != nil {
 		s.writeDomainError(w, err)
 		return

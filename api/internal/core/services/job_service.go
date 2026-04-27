@@ -7,20 +7,20 @@ import (
 	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
-type JobViewerService struct {
+type JobService struct {
 	repo     core.JobRepository
 	resolver core.ResultURLResolver
 }
 
-func NewJobViewerService(repo core.JobRepository, resolver core.ResultURLResolver) *JobViewerService {
-	return &JobViewerService{repo: repo, resolver: resolver}
+func NewJobService(repo core.JobRepository, resolver core.ResultURLResolver) *JobService {
+	return &JobService{repo: repo, resolver: resolver}
 }
 
-func (s *JobViewerService) ListJobs(ctx context.Context, userID string, limit, offset int) ([]core.JobSummary, error) {
+func (s *JobService) ListJobs(ctx context.Context, userID string, limit, offset int) ([]core.JobSummary, error) {
 	return s.repo.List(ctx, core.JobListFilter{UserID: userID, Limit: limit, Offset: offset})
 }
 
-func (s *JobViewerService) GetJobResultURLs(
+func (s *JobService) GetJobResultURLs(
 	ctx context.Context,
 	userID, jobID string,
 	ttl time.Duration,

@@ -1,7 +1,6 @@
 mode: standalone
 api:
   listen_addr: :8080
-  openapi_path: ./openapi.yaml
 standalone:
   sqlite_path: ./var/standalone.db
   results_root: ./var/results

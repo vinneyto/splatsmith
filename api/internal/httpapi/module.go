@@ -3,7 +3,6 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +13,7 @@ import (
 type Dependencies struct {
 	Mode                string
 	AuthService         *services.AuthService
-	JobViewer           *services.JobViewerService
+	JobService          *services.JobService
 	DefaultResultURLTTL time.Duration
 }
 
@@ -34,7 +33,7 @@ func NewModule(cfg Config, deps Dependencies) *Module {
 		deps.DefaultResultURLTTL = 900 * time.Second
 	}
 
-	yamlSpec, jsonSpec := loadOpenAPISpec(cfg.OpenAPIPath)
+	yamlSpec, jsonSpec := loadOpenAPISpec()
 	m := &Module{
 		config:      cfg,
 		deps:        deps,
@@ -82,13 +81,8 @@ func (m *Module) handleOpenAPIJSON(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json; charset=utf-8", m.openapiJSON)
 }
 
-func loadOpenAPISpec(path string) ([]byte, []byte) {
+func loadOpenAPISpec() ([]byte, []byte) {
 	yamlSpec := embeddedOpenAPIYAML
-	if len(yamlSpec) == 0 {
-		if fromFile, err := os.ReadFile(path); err == nil {
-			yamlSpec = fromFile
-		}
-	}
 	if len(yamlSpec) == 0 {
 		fallback := []byte("openapi: 3.0.3\ninfo:\n  title: Splatmaker API\n  version: 0.1.0\npaths: {}\n")
 		return fallback, []byte(`{"openapi":"3.0.3","info":{"title":"Splatmaker API","version":"0.1.0"},"paths":{}}`)

@@ -8,7 +8,7 @@ import (
 //go:embed swaggerui/index.html
 var swaggerUI embed.FS
 
-//go:embed openapi_embedded.yaml
+//go:embed openapi/openapi.yaml
 var embeddedOpenAPIYAML []byte
 
 var swaggerUIFS fs.FS = mustSubFS(swaggerUI, "swaggerui")
