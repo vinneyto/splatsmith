@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/vinneyto/splatsmith/api/internal/core"
+	"github.com/vinneyto/splatra/api/internal/core"
 )
 
 type authProviderStub struct{}

@@ -1,4 +1,4 @@
-module github.com/vinneyto/splatsmith/api
+module github.com/vinneyto/splatra/api
 
 go 1.22
 
