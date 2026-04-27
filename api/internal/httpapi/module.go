@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 
 	"github.com/vinneyto/splatmaker/api/internal/core"
@@ -24,7 +25,7 @@ type Module struct {
 	config Config
 	deps   Dependencies
 
-	mux         *http.ServeMux
+	engine      *gin.Engine
 	openapiYAML []byte
 	openapiJSON []byte
 }
@@ -39,30 +40,39 @@ func NewModule(cfg Config, deps Dependencies) *Module {
 	m := &Module{
 		config:      cfg,
 		deps:        deps,
-		mux:         http.NewServeMux(),
+		engine:      gin.New(),
 		openapiYAML: yamlSpec,
 		openapiJSON: jsonSpec,
 	}
+	m.engine.Use(gin.Recovery())
 	m.routes()
 	return m
 }
 
-func (m *Module) Handler() http.Handler { return m.mux }
+func (m *Module) Handler() http.Handler { return m.engine }
 
 func (m *Module) ListenAddr() string { return m.config.ListenAddr }
 
 func (m *Module) routes() {
-	m.mux.HandleFunc("GET /openapi.yaml", m.handleOpenAPIYAML)
-	m.mux.HandleFunc("GET /openapi.json", m.handleOpenAPIJSON)
-	m.mux.HandleFunc("GET /docs", m.handleDocs)
-	m.mux.HandleFunc("GET /docs/", m.handleDocs)
+	m.engine.GET("/openapi.yaml", m.handleOpenAPIYAML)
+	m.engine.GET("/openapi.json", m.handleOpenAPIJSON)
+	m.engine.GET("/docs", func(c *gin.Context) {
+		c.Redirect(http.StatusPermanentRedirect, "/swagger/index.html")
+	})
+	m.engine.GET("/docs/", func(c *gin.Context) {
+		c.Redirect(http.StatusPermanentRedirect, "/swagger/index.html")
+	})
+	m.engine.GET("/swagger", func(c *gin.Context) {
+		c.Redirect(http.StatusPermanentRedirect, "/swagger/")
+	})
+	m.engine.GET("/swagger/*filepath", gin.WrapH(http.StripPrefix("/swagger/", http.FileServer(http.FS(swaggerUIFS)))))
 
-	HandlerWithOptions(m, StdHTTPServerOptions{
-		BaseRouter: m.mux,
+	apiHandler := HandlerWithOptions(m, StdHTTPServerOptions{
 		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
 			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		},
 	})
+	m.engine.NoRoute(gin.WrapH(apiHandler))
 }
 
 func (m *Module) Healthz(w http.ResponseWriter, _ *http.Request) {
@@ -149,38 +159,12 @@ func (m *Module) GetJobResultUrls(w http.ResponseWriter, r *http.Request, jobID 
 	writeJSON(w, http.StatusOK, JobResultURLsResponse{Items: respItems})
 }
 
-func (m *Module) handleOpenAPIYAML(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
-	_, _ = w.Write(m.openapiYAML)
+func (m *Module) handleOpenAPIYAML(c *gin.Context) {
+	c.Data(http.StatusOK, "application/yaml; charset=utf-8", m.openapiYAML)
 }
 
-func (m *Module) handleOpenAPIJSON(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_, _ = w.Write(m.openapiJSON)
-}
-
-func (m *Module) handleDocs(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(`<!doctype html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Splatmaker API Docs</title>
-    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
-    <style>body { margin: 0; }</style>
-  </head>
-  <body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-    <script>
-      window.ui = SwaggerUIBundle({
-        url: '/openapi.yaml',
-        dom_id: '#swagger-ui'
-      });
-    </script>
-  </body>
-</html>`))
+func (m *Module) handleOpenAPIJSON(c *gin.Context) {
+	c.Data(http.StatusOK, "application/json; charset=utf-8", m.openapiJSON)
 }
 
 func (m *Module) authenticate(w http.ResponseWriter, r *http.Request) (core.UserIdentity, bool) {
