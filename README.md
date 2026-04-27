@@ -1,43 +1,43 @@
-# Ariadne — управление 3D-реконструкцией и просмотр результатов
+# Ariadne — manage 3D reconstruction and view results
 
-## 1) Цель проекта
+## 1) Project goal
 
-`Ariadne` — это продуктовый слой над уже развернутым и проверенным AWS-пайплайном реконструкции из репозитория:
+`Ariadne` is a product layer built on top of an already deployed and validated AWS reconstruction pipeline from the repository:
 
 `guidance-for-open-source-3d-reconstruction-toolbox-for-gaussian-splats-on-aws`
 
-Задача `Ariadne`:
-- дать пользователю простой UX: **загрузить видео → дождаться обработки → посмотреть результат**;
-- дать backend/API для управления заданиями реконструкции;
-- обеспечить уведомления:
-  - в интерфейсе: прогресс + завершение;
-  - на email: уведомление о завершении.
+Ariadne’s mission:
+- provide a simple UX: **upload video → wait for processing → view result**;
+- provide a backend/API to manage reconstruction jobs;
+- provide notifications:
+  - in UI: progress + completion;
+  - by email: completion notification.
 
 ---
 
-## 2) Требования (фаза архитектуры)
+## 2) Requirements (architecture phase)
 
-### Функциональные
-- Пользователь может создать скан (upload видео).
-- Пользователь видит свои сканы со статусами:
+### Functional
+- A user can create a scan (video upload).
+- A user can view their scans with statuses:
   - `in_progress`
   - `completed`
-- Пользователь может открыть карточку скана и просмотреть результат (3D-ассет + метаданные).
-- Сканы строго принадлежат пользователю (tenant boundary по `user_id`).
-- API доступно наружу (публичная документация).
-- На фронтенд приходят обновления прогресса и событие завершения.
-- На почту приходит уведомление о завершении.
+- A user can open a scan details page and view the result (3D asset + metadata).
+- Scans strictly belong to the user (tenant boundary by `user_id`).
+- API is publicly accessible (public documentation).
+- Frontend receives progress updates and completion events.
+- Email notification is sent on completion.
 
-### Нефункциональные
-- Backend: **Go**, запускается **отдельно от AWS** (cloud-agnostic core).
-- Production-размещение backend: **EC2** (через CDK), но код backend не должен быть жестко привязан к AWS SDK/API.
-- Интеграция frontend ↔ backend: **REST** (дополнительно SSE-стрим поверх HTTP для realtime событий).
-- Авторизация: **AWS-managed** (Cognito).
-- Frontend доставка: **CloudFront**.
+### Non-functional
+- Backend: **Go**, runs **independently from AWS** (cloud-agnostic core).
+- Backend production placement: **EC2** (via CDK), but backend code must not be tightly coupled to AWS SDK/API.
+- Frontend ↔ backend integration: **REST** (plus SSE stream over HTTP for real-time events).
+- Authorization: **AWS-managed** (Cognito).
+- Frontend delivery: **CloudFront**.
 
 ---
 
-## 3) High-Level архитектура
+## 3) High-level architecture
 
 ```mermaid
 flowchart LR
@@ -66,99 +66,99 @@ flowchart LR
     API --> DB
 ```
 
-### Ключевая идея интеграции
-`Ariadne` **не переизобретает** вычислительный пайплайн. Она управляет существующим pipeline-слоем:
-1. создает запись скана;
-2. принимает upload/референс на видео;
-3. запускает pipeline (через Step Functions/S3 job-trigger, в зависимости от текущей точки входа);
-4. получает прогресс/завершение;
-5. обновляет scan state;
-6. уведомляет UI и email.
+### Core integration idea
+`Ariadne` does **not reinvent** the compute pipeline. It orchestrates the existing pipeline layer:
+1. creates a scan record;
+2. accepts upload/video reference;
+3. starts pipeline execution (via Step Functions/S3 job trigger, depending on current entry point);
+4. receives progress/completion updates;
+5. updates scan state;
+6. notifies UI and email.
 
-При этом backend проектируется как **core + adapters**:
-- `core` (домен, use-cases, REST handlers) не зависит от AWS;
-- бизнес-логика также **не зависит от конкретной базы данных**;
-- доступ к данным идет через порт `ScanRepository` (интерфейс), а конкретная БД подключается адаптером;
-- AWS подключается через адаптеры (Cognito, DynamoDB, S3, SES, Step Functions);
-- для локального/альтернативного запуска можно подменять адаптеры (например, local storage + SMTP/mock notifier + локальный orchestrator client).
+At the same time, backend is designed as **core + adapters**:
+- `core` (domain, use cases, REST handlers) has no AWS dependency;
+- business logic is also **database-agnostic**;
+- data access goes through the `ScanRepository` port (interface), while concrete DBs are plugged in via adapters;
+- AWS is connected through adapters (Cognito, DynamoDB, S3, SES, Step Functions);
+- for local/alternative runtime, adapters can be swapped (e.g., local storage + SMTP/mock notifier + local orchestrator client).
 
 ---
 
-## 4) AWS-интеграции для production-контура (backend-centric)
+## 4) AWS integrations for production environment (backend-centric)
 
-## В production (AWS) используем
+## In production (AWS), use
 - **EC2 (Go API)**
-  - REST API, авторизация JWT, бизнес-логика сканов.
-  - Launch Template + Auto Scaling (минимум 1 инстанс для старта).
+  - REST API, JWT authorization, scan business logic.
+  - Launch Template + Auto Scaling (minimum 1 instance to start).
 - **Application Load Balancer (ALB)**
-  - TLS termination, routing к EC2.
+  - TLS termination, routing to EC2.
 - **Amazon Cognito (User Pool + App Client)**
-  - AWS-native авторизация пользователей.
-  - JWT access/id token для frontend.
+  - AWS-native user authorization.
+  - JWT access/id token for frontend.
 - **DynamoDB (`scans` table)**
-  - хранение scan metadata/status/progress/result links.
+  - stores scan metadata/status/progress/result links.
 - **S3 input/output buckets**
-  - входные видео и выходные артефакты реконструкции.
-- **Step Functions / существующий pipeline trigger**
-  - фактический запуск 3DGS pipeline.
+  - input videos and output reconstruction artifacts.
+- **Step Functions / existing pipeline trigger**
+  - actual 3DGS pipeline execution.
 - **CloudFront**
-  - отдача frontend (S3 static origin или custom origin).
-- **SES (или SNS email topic)**
-  - email-уведомления о завершении.
+  - frontend delivery (S3 static origin or custom origin).
+- **SES (or SNS email topic)**
+  - completion email notifications.
 
-## Важно: автономный запуск backend
-- Backend должен стартовать **без AWS-инфры** (например, локально/в отдельной среде).
-- AWS-сервисы подключаются только через интерфейсы/адаптеры.
-- Минимальный standalone-режим:
+## Important: autonomous backend startup
+- Backend must start **without AWS infrastructure** (e.g., locally/in a separate environment).
+- AWS services are connected only through interfaces/adapters.
+- Minimal standalone mode:
   - auth adapter: local dev JWT/provider;
-  - repository: PostgreSQL/SQLite (или in-memory для dev);
+  - repository: PostgreSQL/SQLite (or in-memory for dev);
   - object storage: local filesystem/MinIO;
   - notifier: SMTP/mock;
-  - pipeline client: HTTP client к уже развернутому pipeline endpoint или stub.
+  - pipeline client: HTTP client to already deployed pipeline endpoint or stub.
 
-## Опциональные (рекомендуемые)
-- **EventBridge/SQS** между pipeline callbacks и API для надежной доставки событий.
-- **ElastiCache Redis** для fan-out realtime событий при горизонтальном масштабировании API.
-- **WAF** перед CloudFront/ALB.
-- **CloudWatch + X-Ray** для observability.
+## Optional (recommended)
+- **EventBridge/SQS** between pipeline callbacks and API for reliable event delivery.
+- **ElastiCache Redis** for real-time event fan-out under horizontal API scaling.
+- **WAF** in front of CloudFront/ALB.
+- **CloudWatch + X-Ray** for observability.
 
 ---
 
-## 5) Backend-домен и состояния
+## 5) Backend domain and statuses
 
-## Сущность `Scan`
+## `Scan` entity
 - `scan_id` (UUID)
 - `user_id` (from Cognito `sub`)
 - `status` (`in_progress` | `completed` | `failed` internal)
 - `progress_percent` (0..100)
 - `input_video_s3_key`
-- `result_asset_url` (signed URL или CDN URL)
+- `result_asset_url` (signed URL or CDN URL)
 - `preview_thumbnail_url`
-- `pipeline_job_id` (id в Step Functions/Batch/SageMaker)
+- `pipeline_job_id` (id in Step Functions/Batch/SageMaker)
 - `created_at`, `updated_at`, `completed_at`
 - `error_message` (internal)
 
-> Во frontend показываем минимум: `in_progress`, `completed`. `failed` можно включить позже в UI, но backend хранит для эксплуатационной прозрачности.
+> In frontend, we display at minimum: `in_progress`, `completed`. `failed` can be added later in UI, but backend keeps it for operational transparency.
 
 ---
 
 ## 6) REST API (v1)
 
 ## Auth
-- `Authorization: Bearer <JWT from Cognito>`
-- Все `/v1/scans/*` scoped на текущего пользователя.
+- `Authorization: Bearer *** from Cognito>`
+- All `/v1/scans/*` endpoints are scoped to current user.
 
 ## Endpoints
 
-### Создать скан
+### Create scan
 `POST /v1/scans`
 
-Варианты:
-1) multipart upload (`video` файл)
+Options:
+1) multipart upload (`video` file)
 2) presigned URL flow:
-   - `POST /v1/uploads` → получить `upload_url`
-   - frontend грузит напрямую в S3
-   - `POST /v1/scans` с `input_video_s3_key`
+   - `POST /v1/uploads` → get `upload_url`
+   - frontend uploads directly to S3
+   - `POST /v1/scans` with `input_video_s3_key`
 
 Response:
 ```json
@@ -169,125 +169,125 @@ Response:
 }
 ```
 
-### Список сканов текущего пользователя
+### List current user scans
 `GET /v1/scans?cursor=...&limit=20`
 
-### Детали скана
+### Scan details
 `GET /v1/scans/{scan_id}`
 
-### События прогресса/завершения (frontend notifications)
+### Progress/completion events (frontend notifications)
 `GET /v1/scans/{scan_id}/events`
 
 - SSE stream (`text/event-stream`)
-- события:
+- events:
   - `scan.progress`
   - `scan.completed`
   - `scan.failed`
 
-### Публичная документация API
+### Public API docs
 `GET /docs`
-- OpenAPI 3.1 + Swagger UI/ReDoc (наружу).
+- OpenAPI 3.1 + Swagger UI/ReDoc (public).
 
 ---
 
-## 7) Потоки выполнения
+## 7) Execution flows
 
-## A. Создание скана
-1. Пользователь логинится через Cognito.
-2. Frontend загружает видео (лучше direct-to-S3 через presigned URL).
-3. Frontend вызывает `POST /v1/scans`.
-4. API создает запись в DynamoDB со статусом `in_progress`.
-5. API запускает существующий pipeline (Step Functions start / S3 job trigger).
-6. API возвращает `scan_id`.
+## A. Create scan
+1. User logs in via Cognito.
+2. Frontend uploads video (prefer direct-to-S3 via presigned URL).
+3. Frontend calls `POST /v1/scans`.
+4. API creates a DynamoDB record with status `in_progress`.
+5. API starts existing pipeline (Step Functions start / S3 job trigger).
+6. API returns `scan_id`.
 
-## B. Обновление прогресса
-1. Pipeline публикует прогресс (event/callback).
-2. API обновляет `progress_percent` в DynamoDB.
-3. SSE endpoint пушит событие во frontend.
+## B. Progress updates
+1. Pipeline publishes progress (event/callback).
+2. API updates `progress_percent` in DynamoDB.
+3. SSE endpoint pushes event to frontend.
 
-## C. Завершение
-1. Pipeline завершает работу и пишет артефакты в S3 output.
-2. API получает completion callback/event.
-3. API ставит `status=completed`, фиксирует ссылки на результат.
-4. API отправляет email (SES/SNS email).
-5. Frontend получает `scan.completed` и обновляет UI.
+## C. Completion
+1. Pipeline completes and writes artifacts to S3 output.
+2. API receives completion callback/event.
+3. API sets `status=completed`, stores result links.
+4. API sends email (SES/SNS email).
+5. Frontend receives `scan.completed` and updates UI.
 
 ---
 
-## 8) Авторизация и безопасность
+## 8) Authorization and security
 
 - Identity: Cognito User Pool.
-- API проверяет JWT и извлекает `sub` как `user_id`.
-- Любые запросы к сканам фильтруются по `user_id`.
-- S3 доступ:
-  - upload через короткоживущие presigned URL;
-  - download результатов через signed URL/CloudFront signed cookies.
-- Шифрование:
+- API validates JWT and extracts `sub` as `user_id`.
+- All scan requests are filtered by `user_id`.
+- S3 access:
+  - upload via short-lived presigned URLs;
+  - result download via signed URL/CloudFront signed cookies.
+- Encryption:
   - S3 SSE-KMS,
   - DynamoDB encryption at rest,
-  - TLS везде.
-- IAM least privilege для EC2 instance role.
+  - TLS everywhere.
+- IAM least privilege for EC2 instance role.
 
 ---
 
-## 9) Observability и эксплуатация
+## 9) Observability and operations
 
 - CloudWatch Logs:
   - API access/error logs,
   - pipeline callback logs.
 - CloudWatch Metrics/Alarms:
-  - количество активных `in_progress` сканов,
-  - среднее время реконструкции,
+  - number of active `in_progress` scans,
+  - average reconstruction time,
   - % failed jobs,
   - API p95 latency.
 - Correlation ID:
-  - `scan_id` проходит через API, orchestration и уведомления.
+  - `scan_id` propagates through API, orchestration, and notifications.
 
 ---
 
-## 10) Развертывание (целевой контур)
+## 10) Deployment (target environments)
 
-### Режим A — standalone backend (без AWS-зависимостей)
-- Запуск Go-сервиса как обычного приложения (`docker compose`/systemd/Kubernetes).
-- Конфигурация через env (`AUTH_PROVIDER`, `DB_PROVIDER`, `STORAGE_PROVIDER`, `MAIL_PROVIDER`, `PIPELINE_PROVIDER`).
-- Используются не-AWS адаптеры или заглушки.
+### Mode A — standalone backend (without AWS dependencies)
+- Run Go service as a regular app (`docker compose`/systemd/Kubernetes).
+- Configure via env (`AUTH_PROVIDER`, `DB_PROVIDER`, `STORAGE_PROVIDER`, `MAIL_PROVIDER`, `PIPELINE_PROVIDER`).
+- Non-AWS adapters or stubs are used.
 
-### Режим B — AWS production (через CDK)
+### Mode B — AWS production (via CDK)
 - Frontend: S3 + CloudFront.
-- Backend: Go service на EC2 за ALB.
+- Backend: Go service on EC2 behind ALB.
 - Auth: Cognito.
 - Data: DynamoDB + S3.
 - Pipeline orchestration: reuse existing deployed 3DGS stack.
 - Notifications: SES (email) + SSE (frontend realtime).
 
-CDK отвечает за инфраструктуру, но backend остается переносимым сервисом с конфигурируемыми адаптерами.
+CDK provisions infrastructure, while backend remains a portable service with configurable adapters.
 
 ---
 
-## 11) Roadmap (следующие шаги после этого README)
+## 11) Roadmap (next steps after this README)
 
-1. Зафиксировать контракт интеграции с текущим pipeline:
-   - где стартуем job,
-   - в каком формате получаем прогресс/complete callback.
-2. Сформировать OpenAPI v1 (minimal):
+1. Finalize integration contract with the current pipeline:
+   - where jobs are started,
+   - format of progress/complete callbacks.
+2. Prepare minimal OpenAPI v1:
    - `/v1/uploads`, `/v1/scans`, `/v1/scans/{id}`, `/v1/scans/{id}/events`.
-3. Собрать skeleton backend на Go в стиле `core + adapters`:
-   - HTTP router, JWT middleware, интерфейсы портов (`AuthProvider`, `ScanRepository`, `ObjectStorage`, `PipelineClient`, `Notifier`).
-4. Сделать две сборки адаптеров:
+3. Build Go backend skeleton in `core + adapters` style:
+   - HTTP router, JWT middleware, port interfaces (`AuthProvider`, `ScanRepository`, `ObjectStorage`, `PipelineClient`, `Notifier`).
+4. Implement two adapter bundles:
    - `aws` (Cognito/DynamoDB/S3/SES/StepFunctions),
-   - `standalone` (local/pgsql/minio/smtp или mock).
-5. Поднять базовый frontend:
+   - `standalone` (local/pgsql/minio/smtp or mock).
+5. Build baseline frontend:
    - login, create scan, list scans, scan details viewer page.
-6. Настроить IaC для AWS-контура через CDK.
+6. Set up IaC for AWS environment via CDK.
 
 ---
 
-## 12) Принципы границ ответственности
+## 12) Responsibility boundaries
 
-- Existing 3DGS pipeline отвечает за вычисление реконструкции.
-- Ariadne отвечает за:
+- Existing 3DGS pipeline is responsible for reconstruction computation.
+- Ariadne is responsible for:
   - user-facing product API,
-  - ownership и доступ к сканам,
+  - ownership and access to scans,
   - lifecycle/status/progress,
-  - UX уведомлений,
-  - публикацию API-документации.
+  - UX notifications,
+  - API documentation publishing.
