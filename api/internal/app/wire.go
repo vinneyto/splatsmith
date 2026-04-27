@@ -9,9 +9,11 @@ import (
 )
 
 type Runtime struct {
-	Mode        Mode
-	AuthService *core.AuthService
-	Close       func() error
+	Mode         Mode
+	AuthService  *core.AuthService
+	JobViewer    *core.JobViewerService
+	ResultURLTTL int
+	Close        func() error
 }
 
 func BuildRuntime(cfg Config) (*Runtime, error) {
@@ -21,10 +23,16 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 		if err != nil {
 			return nil, err
 		}
+		ttl := cfg.Standalone.ResultURLTTLSeconds
+		if ttl <= 0 {
+			ttl = 900
+		}
 		return &Runtime{
-			Mode:        cfg.Mode,
-			AuthService: core.NewAuthService(module.AuthProvider),
-			Close:       module.Close,
+			Mode:         cfg.Mode,
+			AuthService:  core.NewAuthService(module.AuthProvider),
+			JobViewer:    core.NewJobViewerService(module.JobRepository, module.ResultURLResolver),
+			ResultURLTTL: ttl,
+			Close:        module.Close,
 		}, nil
 	case ModeAWS:
 		module, err := aws.NewModule(cfg.AWS)
@@ -32,8 +40,10 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 			return nil, err
 		}
 		return &Runtime{
-			Mode:        cfg.Mode,
-			AuthService: core.NewAuthService(module.AuthProvider),
+			Mode:         cfg.Mode,
+			AuthService:  core.NewAuthService(module.AuthProvider),
+			JobViewer:    core.NewJobViewerService(module.JobRepository, module.ResultURLResolver),
+			ResultURLTTL: 900,
 			Close: func() error {
 				_ = module
 				return nil

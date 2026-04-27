@@ -2,14 +2,6 @@ package core
 
 import "time"
 
-type ScanStatus string
-
-const (
-	ScanStatusInProgress ScanStatus = "in_progress"
-	ScanStatusCompleted  ScanStatus = "completed"
-	ScanStatusFailed     ScanStatus = "failed"
-)
-
 type UserIdentity struct {
 	UserID string
 	Email  string
@@ -20,16 +12,45 @@ type AuthClaims struct {
 	Email  string
 }
 
-type Scan struct {
-	ScanID          string
-	UserID          string
-	Status          ScanStatus
-	ProgressPercent int
-	InputVideoPath  string
-	ResultAssetURL  *string
-	PipelineJobID   *string
-	ErrorMessage    *string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	CompletedAt     *time.Time
+type JobStatus string
+
+const (
+	JobStatusNew        JobStatus = "new"
+	JobStatusInProgress JobStatus = "in_progress"
+	JobStatusDone       JobStatus = "done"
+	JobStatusFailed     JobStatus = "failed"
+)
+
+type JobListFilter struct {
+	UserID string
+	Status *JobStatus
+	Limit  int
+	Offset int
+}
+
+type JobSummary struct {
+	JobID     string
+	UserID    string
+	Status    JobStatus
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type OutputFileRef struct {
+	Key       string
+	FileName  string
+	SizeBytes *int64
+}
+
+type JobDetails struct {
+	Summary      JobSummary
+	ErrorMessage *string
+	OutputFiles  []OutputFileRef
+}
+
+type ResultFileURL struct {
+	Key       string
+	FileName  string
+	URL       string
+	ExpiresAt time.Time
 }

@@ -3,19 +3,15 @@ package aws
 import "github.com/vinneyto/ariadne/api/internal/core"
 
 type Module struct {
-	AuthProvider   core.AuthProvider
-	ScanRepository core.ScanRepository
-	ObjectStorage  core.ObjectStorage
-	PipelineClient core.PipelineClient
-	Notifier       core.Notifier
+	AuthProvider      core.AuthProvider
+	JobRepository     core.JobRepository
+	ResultURLResolver core.ResultURLResolver
 }
 
 func NewModule(_ Config) (*Module, error) {
 	return &Module{
-		AuthProvider:   &authProviderStub{},
-		ScanRepository: &scanRepositoryStub{},
-		ObjectStorage:  &objectStorageStub{},
-		PipelineClient: &pipelineClientStub{},
-		Notifier:       &notifierStub{},
+		AuthProvider:      &authProviderStub{},
+		JobRepository:     &jobRepositoryStub{},
+		ResultURLResolver: &resultURLResolverStub{},
 	}, nil
 }

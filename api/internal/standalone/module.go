@@ -3,33 +3,29 @@ package standalone
 import "github.com/vinneyto/ariadne/api/internal/core"
 
 type Module struct {
-	AuthProvider   core.AuthProvider
-	ScanRepository core.ScanRepository
-	ObjectStorage  core.ObjectStorage
-	PipelineClient core.PipelineClient
-	Notifier       core.Notifier
+	AuthProvider      core.AuthProvider
+	JobRepository     core.JobRepository
+	ResultURLResolver core.ResultURLResolver
 
 	closers []func() error
 }
 
 func NewModule(cfg Config) (*Module, error) {
-	repo, err := NewSQLiteScanRepository(cfg.SQLitePath)
+	repo, err := NewSQLiteJobRepository(cfg.SQLitePath)
 	if err != nil {
 		return nil, err
 	}
-	storage, err := NewLocalObjectStorage(cfg.StorageRoot)
+	resolver, err := NewFileResultURLResolver(cfg.ResultsRoot)
 	if err != nil {
 		_ = repo.Close()
 		return nil, err
 	}
 
 	module := &Module{
-		AuthProvider:   NewDevAuthProvider(cfg),
-		ScanRepository: repo,
-		ObjectStorage:  storage,
-		PipelineClient: NewPipelineStub(),
-		Notifier:       NewLogNotifier(),
-		closers:        []func() error{repo.Close},
+		AuthProvider:      NewDevAuthProvider(cfg),
+		JobRepository:     repo,
+		ResultURLResolver: resolver,
+		closers:           []func() error{repo.Close},
 	}
 	return module, nil
 }

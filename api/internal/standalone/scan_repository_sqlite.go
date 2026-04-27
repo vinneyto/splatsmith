@@ -14,11 +14,11 @@ import (
 	"github.com/vinneyto/ariadne/api/internal/core"
 )
 
-type SQLiteScanRepository struct {
+type SQLiteJobRepository struct {
 	db *sql.DB
 }
 
-func NewSQLiteScanRepository(sqlitePath string) (*SQLiteScanRepository, error) {
+func NewSQLiteJobRepository(sqlitePath string) (*SQLiteJobRepository, error) {
 	if sqlitePath == "" {
 		return nil, fmt.Errorf("sqlite path is empty")
 	}
@@ -31,98 +31,141 @@ func NewSQLiteScanRepository(sqlitePath string) (*SQLiteScanRepository, error) {
 		return nil, err
 	}
 
-	repo := &SQLiteScanRepository{db: db}
+	repo := &SQLiteJobRepository{db: db}
 	if err := repo.initSchema(); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := repo.seedMockData(); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	return repo, nil
 }
 
-func (r *SQLiteScanRepository) Close() error { return r.db.Close() }
+func (r *SQLiteJobRepository) Close() error { return r.db.Close() }
 
-func (r *SQLiteScanRepository) initSchema() error {
+func (r *SQLiteJobRepository) initSchema() error {
 	const schema = `
-CREATE TABLE IF NOT EXISTS scans (
-  scan_id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS jobs (
+  job_id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   status TEXT NOT NULL,
-  progress_percent INTEGER NOT NULL DEFAULT 0,
-  input_video_path TEXT NOT NULL,
-  result_asset_url TEXT,
-  pipeline_job_id TEXT,
   error_message TEXT,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  completed_at TEXT
+  updated_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_scans_user_id_created_at ON scans(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_jobs_user_id_created_at ON jobs(user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS job_output_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL,
+  file_key TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  size_bytes INTEGER,
+  FOREIGN KEY(job_id) REFERENCES jobs(job_id)
+);
+CREATE INDEX IF NOT EXISTS idx_job_output_files_job_id ON job_output_files(job_id);
 `
 	_, err := r.db.Exec(schema)
 	return err
 }
 
-func (r *SQLiteScanRepository) Create(ctx context.Context, scan *core.Scan) error {
-	_, err := r.db.ExecContext(ctx, `
-INSERT INTO scans (
-  scan_id, user_id, status, progress_percent, input_video_path,
-  result_asset_url, pipeline_job_id, error_message, created_at, updated_at, completed_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		scan.ScanID,
-		scan.UserID,
-		scan.Status,
-		scan.ProgressPercent,
-		scan.InputVideoPath,
-		scan.ResultAssetURL,
-		scan.PipelineJobID,
-		scan.ErrorMessage,
-		scan.CreatedAt.Format(time.RFC3339Nano),
-		scan.UpdatedAt.Format(time.RFC3339Nano),
-		nullableTime(scan.CompletedAt),
-	)
-	return err
-}
+func (r *SQLiteJobRepository) seedMockData() error {
+	var count int
+	if err := r.db.QueryRow(`SELECT COUNT(1) FROM jobs`).Scan(&count); err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
 
-func (r *SQLiteScanRepository) GetByID(ctx context.Context, userID, scanID string) (*core.Scan, error) {
-	row := r.db.QueryRowContext(ctx, `
-SELECT scan_id, user_id, status, progress_percent, input_video_path,
-       result_asset_url, pipeline_job_id, error_message, created_at, updated_at, completed_at
-FROM scans
-WHERE user_id = ? AND scan_id = ?`, userID, scanID)
-
-	scan, err := scanFromRow(row.Scan)
+	now := time.Now().UTC()
+	tx, err := r.db.Begin()
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, core.ErrScanNotFound
-		}
-		return nil, err
+		return err
 	}
-	return scan, nil
+	defer func() { _ = tx.Rollback() }()
+
+	jobs := []struct {
+		id, userID, status string
+		errorMessage       *string
+		createdAt          time.Time
+	}{
+		{id: "job-demo-001", userID: "dev-user", status: string(core.JobStatusDone), createdAt: now.Add(-6 * time.Hour)},
+		{id: "job-demo-002", userID: "dev-user", status: string(core.JobStatusInProgress), createdAt: now.Add(-2 * time.Hour)},
+		{id: "job-demo-003", userID: "dev-user", status: string(core.JobStatusFailed), errorMessage: strPtr("reconstruction step failed"), createdAt: now.Add(-30 * time.Minute)},
+	}
+
+	for _, job := range jobs {
+		_, err := tx.Exec(`
+INSERT INTO jobs(job_id, user_id, status, error_message, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?)`,
+			job.id,
+			job.userID,
+			job.status,
+			job.errorMessage,
+			job.createdAt.Format(time.RFC3339Nano),
+			now.Format(time.RFC3339Nano),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	outputs := []struct {
+		jobID, key, fileName string
+		sizeBytes            *int64
+	}{
+		{jobID: "job-demo-001", key: "outputs/job-demo-001/splat/model.splat", fileName: "model.splat", sizeBytes: int64Ptr(18_450_120)},
+		{jobID: "job-demo-001", key: "outputs/job-demo-001/mesh/model.ply", fileName: "model.ply", sizeBytes: int64Ptr(52_190_002)},
+		{jobID: "job-demo-002", key: "outputs/job-demo-002/splat/model.splat", fileName: "model.splat", sizeBytes: nil},
+	}
+	for _, output := range outputs {
+		_, err := tx.Exec(`
+INSERT INTO job_output_files(job_id, file_key, file_name, size_bytes)
+VALUES (?, ?, ?, ?)`, output.jobID, output.key, output.fileName, output.sizeBytes)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
-func (r *SQLiteScanRepository) ListByUser(ctx context.Context, userID string, limit, offset int) ([]core.Scan, error) {
-	if limit <= 0 {
-		limit = 20
+func (r *SQLiteJobRepository) List(ctx context.Context, filter core.JobListFilter) ([]core.JobSummary, error) {
+	if filter.UserID == "" {
+		return nil, fmt.Errorf("user id is required")
 	}
-	rows, err := r.db.QueryContext(ctx, `
-SELECT scan_id, user_id, status, progress_percent, input_video_path,
-       result_asset_url, pipeline_job_id, error_message, created_at, updated_at, completed_at
-FROM scans
-WHERE user_id = ?
-ORDER BY created_at DESC
-LIMIT ? OFFSET ?`, userID, limit, offset)
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+
+	query := `
+SELECT job_id, user_id, status, created_at, updated_at
+FROM jobs
+WHERE user_id = ?`
+	args := []any{filter.UserID}
+	if filter.Status != nil {
+		query += ` AND status = ?`
+		args = append(args, string(*filter.Status))
+	}
+	query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	args = append(args, filter.Limit, filter.Offset)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	result := make([]core.Scan, 0, limit)
+	result := make([]core.JobSummary, 0, filter.Limit)
 	for rows.Next() {
-		scan, err := scanFromRow(rows.Scan)
+		summary, err := summaryFromRow(rows.Scan)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, *scan)
+		result = append(result, *summary)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -130,64 +173,20 @@ LIMIT ? OFFSET ?`, userID, limit, offset)
 	return result, nil
 }
 
-func (r *SQLiteScanRepository) UpdateStatus(
-	ctx context.Context,
-	scanID string,
-	status core.ScanStatus,
-	progressPercent int,
-	resultAssetURL *string,
-	errorMessage *string,
-) error {
-	now := time.Now().UTC().Format(time.RFC3339Nano)
-	var completedAt any
-	if status == core.ScanStatusCompleted {
-		v := time.Now().UTC()
-		completedAt = v.Format(time.RFC3339Nano)
-	}
+func (r *SQLiteJobRepository) GetByID(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+	row := r.db.QueryRowContext(ctx, `
+SELECT job_id, user_id, status, error_message, created_at, updated_at
+FROM jobs
+WHERE user_id = ? AND job_id = ?`, userID, jobID)
 
-	res, err := r.db.ExecContext(ctx, `
-UPDATE scans
-SET status = ?, progress_percent = ?, result_asset_url = COALESCE(?, result_asset_url),
-    error_message = COALESCE(?, error_message), updated_at = ?, completed_at = COALESCE(?, completed_at)
-WHERE scan_id = ?`, status, progressPercent, resultAssetURL, errorMessage, now, completedAt, scanID)
-	if err != nil {
-		return err
-	}
-	affected, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected == 0 {
-		return core.ErrScanNotFound
-	}
-	return nil
-}
-
-func scanFromRow(scanFn func(dest ...any) error) (*core.Scan, error) {
 	var (
-		scanID, userID, status, inputVideoPath string
-		progressPercent                        int
-		resultAssetURL                         sql.NullString
-		pipelineJobID                          sql.NullString
-		errorMessage                           sql.NullString
-		createdAtRaw                           string
-		updatedAtRaw                           string
-		completedAtRaw                         sql.NullString
+		loadedJobID, loadedUserID, statusRaw, createdAtRaw, updatedAtRaw string
+		errorMessage                                                     sql.NullString
 	)
-
-	if err := scanFn(
-		&scanID,
-		&userID,
-		&status,
-		&progressPercent,
-		&inputVideoPath,
-		&resultAssetURL,
-		&pipelineJobID,
-		&errorMessage,
-		&createdAtRaw,
-		&updatedAtRaw,
-		&completedAtRaw,
-	); err != nil {
+	if err := row.Scan(&loadedJobID, &loadedUserID, &statusRaw, &errorMessage, &createdAtRaw, &updatedAtRaw); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, core.ErrJobNotFound
+		}
 		return nil, err
 	}
 
@@ -200,20 +199,68 @@ func scanFromRow(scanFn func(dest ...any) error) (*core.Scan, error) {
 		return nil, err
 	}
 
-	scan := &core.Scan{
-		ScanID:          scanID,
-		UserID:          userID,
-		Status:          core.ScanStatus(status),
-		ProgressPercent: progressPercent,
-		InputVideoPath:  inputVideoPath,
-		ResultAssetURL:  nullableStringPtr(resultAssetURL),
-		PipelineJobID:   nullableStringPtr(pipelineJobID),
-		ErrorMessage:    nullableStringPtr(errorMessage),
-		CreatedAt:       createdAt,
-		UpdatedAt:       updatedAt,
-		CompletedAt:     parseNullableTime(completedAtRaw),
+	outputs, err := r.loadOutputs(ctx, jobID)
+	if err != nil {
+		return nil, err
 	}
-	return scan, nil
+
+	return &core.JobDetails{
+		Summary: core.JobSummary{
+			JobID:     loadedJobID,
+			UserID:    loadedUserID,
+			Status:    core.JobStatus(statusRaw),
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+		},
+		ErrorMessage: nullableStringPtr(errorMessage),
+		OutputFiles:  outputs,
+	}, nil
+}
+
+func (r *SQLiteJobRepository) loadOutputs(ctx context.Context, jobID string) ([]core.OutputFileRef, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT file_key, file_name, size_bytes
+FROM job_output_files
+WHERE job_id = ?
+ORDER BY id ASC`, jobID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	outputs := make([]core.OutputFileRef, 0)
+	for rows.Next() {
+		var (
+			key, fileName string
+			sizeRaw       sql.NullInt64
+		)
+		if err := rows.Scan(&key, &fileName, &sizeRaw); err != nil {
+			return nil, err
+		}
+		outputs = append(outputs, core.OutputFileRef{Key: key, FileName: fileName, SizeBytes: nullableInt64Ptr(sizeRaw)})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return outputs, nil
+}
+
+func summaryFromRow(scanFn func(dest ...any) error) (*core.JobSummary, error) {
+	var (
+		jobID, userID, statusRaw, createdAtRaw, updatedAtRaw string
+	)
+	if err := scanFn(&jobID, &userID, &statusRaw, &createdAtRaw, &updatedAtRaw); err != nil {
+		return nil, err
+	}
+	createdAt, err := time.Parse(time.RFC3339Nano, createdAtRaw)
+	if err != nil {
+		return nil, err
+	}
+	updatedAt, err := time.Parse(time.RFC3339Nano, updatedAtRaw)
+	if err != nil {
+		return nil, err
+	}
+	return &core.JobSummary{JobID: jobID, UserID: userID, Status: core.JobStatus(statusRaw), CreatedAt: createdAt, UpdatedAt: updatedAt}, nil
 }
 
 func nullableStringPtr(v sql.NullString) *string {
@@ -224,20 +271,13 @@ func nullableStringPtr(v sql.NullString) *string {
 	return &s
 }
 
-func parseNullableTime(v sql.NullString) *time.Time {
-	if !v.Valid || v.String == "" {
+func nullableInt64Ptr(v sql.NullInt64) *int64 {
+	if !v.Valid {
 		return nil
 	}
-	t, err := time.Parse(time.RFC3339Nano, v.String)
-	if err != nil {
-		return nil
-	}
-	return &t
+	x := v.Int64
+	return &x
 }
 
-func nullableTime(v *time.Time) any {
-	if v == nil {
-		return nil
-	}
-	return v.UTC().Format(time.RFC3339Nano)
-}
+func int64Ptr(v int64) *int64 { return &v }
+func strPtr(v string) *string { return &v }

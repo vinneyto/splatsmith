@@ -2,8 +2,5 @@ mode: aws
 aws:
   region: eu-central-1
   user_pool_id: TODO
-  scans_table: TODO
-  input_bucket: TODO
-  output_bucket: TODO
-  step_functions_arn: TODO
-  ses_sender_email: TODO
+  jobs_table: TODO
+  result_bucket: TODO

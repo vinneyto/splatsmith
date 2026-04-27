@@ -1,7 +1,8 @@
 mode: standalone
 standalone:
   sqlite_path: ./var/standalone.db
-  storage_root: ./var/storage
+  results_root: ./var/results
+  result_url_ttl_seconds: 900
   dev_token: dev-token
   dev_user_id: dev-user
   dev_user_email: dev@example.com

@@ -3,53 +3,27 @@ package aws
 import (
 	"context"
 	"fmt"
-	"io"
+	"time"
 
 	"github.com/vinneyto/ariadne/api/internal/core"
 )
 
 type authProviderStub struct{}
-
-type scanRepositoryStub struct{}
-
-type objectStorageStub struct{}
-
-type pipelineClientStub struct{}
-
-type notifierStub struct{}
+type jobRepositoryStub struct{}
+type resultURLResolverStub struct{}
 
 func (s *authProviderStub) ValidateToken(context.Context, string) (core.AuthClaims, error) {
 	return core.AuthClaims{}, fmt.Errorf("aws auth provider: %w", core.ErrNotImplemented)
 }
 
-func (s *scanRepositoryStub) Create(context.Context, *core.Scan) error {
-	return fmt.Errorf("aws scan repository: %w", core.ErrNotImplemented)
+func (s *jobRepositoryStub) List(context.Context, core.JobListFilter) ([]core.JobSummary, error) {
+	return nil, fmt.Errorf("aws job repository: %w", core.ErrNotImplemented)
 }
 
-func (s *scanRepositoryStub) GetByID(context.Context, string, string) (*core.Scan, error) {
-	return nil, fmt.Errorf("aws scan repository: %w", core.ErrNotImplemented)
+func (s *jobRepositoryStub) GetByID(context.Context, string, string) (*core.JobDetails, error) {
+	return nil, fmt.Errorf("aws job repository: %w", core.ErrNotImplemented)
 }
 
-func (s *scanRepositoryStub) ListByUser(context.Context, string, int, int) ([]core.Scan, error) {
-	return nil, fmt.Errorf("aws scan repository: %w", core.ErrNotImplemented)
-}
-
-func (s *scanRepositoryStub) UpdateStatus(context.Context, string, core.ScanStatus, int, *string, *string) error {
-	return fmt.Errorf("aws scan repository: %w", core.ErrNotImplemented)
-}
-
-func (s *objectStorageStub) SaveInputVideo(context.Context, string, string, io.Reader) (string, error) {
-	return "", fmt.Errorf("aws object storage: %w", core.ErrNotImplemented)
-}
-
-func (s *objectStorageStub) OpenResultAsset(context.Context, string) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("aws object storage: %w", core.ErrNotImplemented)
-}
-
-func (s *pipelineClientStub) StartScan(context.Context, string, string) (string, error) {
-	return "", fmt.Errorf("aws pipeline client: %w", core.ErrNotImplemented)
-}
-
-func (s *notifierStub) NotifyScanCompleted(context.Context, string, core.Scan) error {
-	return fmt.Errorf("aws notifier: %w", core.ErrNotImplemented)
+func (s *resultURLResolverStub) ResolveResultURL(context.Context, string, time.Duration) (core.ResultFileURL, error) {
+	return core.ResultFileURL{}, fmt.Errorf("aws result url resolver: %w", core.ErrNotImplemented)
 }
