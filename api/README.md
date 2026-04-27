@@ -20,8 +20,8 @@ go run ./cmd/api -config ./config/standalone.yaml
 - Generator config: `api/internal/httpapi/openapi/oapi-codegen.yaml`
 - Generated file: `api/internal/httpapi/openapi_gen.go`
 - REST runtime: Gin router (`github.com/gin-gonic/gin`) with generated std-http handlers behind it.
-- Public docs routes: `/docs` (redirect), `/swagger/*`, `/openapi.yaml`, `/openapi.json`
-- Swagger UI (`swaggerui/index.html`) and OpenAPI spec are embedded into the binary (`go:embed`).
+- Public docs routes: `/docs` (redirect), `/scalar/*`, `/openapi.yaml`, `/openapi.json`
+- Scalar API Reference (`scalarui/index.html`) and OpenAPI spec are embedded into the binary (`go:embed`).
 
 Regenerate after spec changes:
 

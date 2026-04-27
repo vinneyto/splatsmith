@@ -55,15 +55,15 @@ func (m *Module) routes() {
 	m.engine.GET("/openapi.yaml", m.handleOpenAPIYAML)
 	m.engine.GET("/openapi.json", m.handleOpenAPIJSON)
 	m.engine.GET("/docs", func(c *gin.Context) {
-		c.Redirect(http.StatusPermanentRedirect, "/swagger/index.html")
+		c.Redirect(http.StatusPermanentRedirect, "/scalar/index.html")
 	})
 	m.engine.GET("/docs/", func(c *gin.Context) {
-		c.Redirect(http.StatusPermanentRedirect, "/swagger/index.html")
+		c.Redirect(http.StatusPermanentRedirect, "/scalar/index.html")
 	})
-	m.engine.GET("/swagger", func(c *gin.Context) {
-		c.Redirect(http.StatusPermanentRedirect, "/swagger/")
+	m.engine.GET("/scalar", func(c *gin.Context) {
+		c.Redirect(http.StatusPermanentRedirect, "/scalar/")
 	})
-	m.engine.GET("/swagger/*filepath", gin.WrapH(http.StripPrefix("/swagger/", http.FileServer(http.FS(swaggerUIFS)))))
+	m.engine.GET("/scalar/*filepath", gin.WrapH(http.StripPrefix("/scalar/", http.FileServer(http.FS(scalarUIFS)))))
 
 	apiHandler := HandlerWithOptions(m.apiServer, StdHTTPServerOptions{
 		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
