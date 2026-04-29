@@ -7,8 +7,7 @@ export const store = configureStore({
     auth: authReducer,
     [splatmakerApi.reducerPath]: splatmakerApi.reducer,
   },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(splatmakerApi.middleware),
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(splatmakerApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

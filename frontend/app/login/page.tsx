@@ -32,7 +32,7 @@ export default function LoginPage() {
         setAuth({
           token: result.access_token,
           user: { userId: result.user.user_id, email: result.user.email },
-        }),
+        })
       );
       router.push("/reconstructions");
     } catch {
@@ -42,7 +42,10 @@ export default function LoginPage() {
 
   return (
     <main style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-      <form onSubmit={handleSubmit} style={{ width: 360, background: "white", padding: 24, borderRadius: 12 }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ width: 360, background: "white", padding: 24, borderRadius: 12 }}
+      >
         <h1 style={{ marginTop: 0 }}>Splatmaker Login</h1>
         <label style={{ display: "block", marginBottom: 12 }}>
           Username
