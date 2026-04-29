@@ -18,12 +18,14 @@ const (
 	BearerAuthScopes = "bearerAuth.Scopes"
 )
 
-// Defines values for JobSummaryStatus.
+// Defines values for JobStatus.
 const (
-	Done       JobSummaryStatus = "done"
-	Failed     JobSummaryStatus = "failed"
-	InProgress JobSummaryStatus = "in_progress"
-	New        JobSummaryStatus = "new"
+	Cancelled  JobStatus = "cancelled"
+	Done       JobStatus = "done"
+	Failed     JobStatus = "failed"
+	InProgress JobStatus = "in_progress"
+	New        JobStatus = "new"
+	Queued     JobStatus = "queued"
 )
 
 // ErrorResponse defines model for ErrorResponse.
@@ -37,25 +39,53 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
+// JobDetails defines model for JobDetails.
+type JobDetails struct {
+	Attempt         int             `json:"attempt"`
+	ErrorMessage    *string         `json:"error_message"`
+	FinishedAt      *time.Time      `json:"finished_at"`
+	LastHeartbeatAt *time.Time      `json:"last_heartbeat_at"`
+	OutputFiles     []OutputFileRef `json:"output_files"`
+	SimulateFailure bool            `json:"simulate_failure"`
+	SourceRef       *string         `json:"source_ref"`
+	StartedAt       *time.Time      `json:"started_at"`
+	Summary         JobSummary      `json:"summary"`
+}
+
+// JobMutationResponse defines model for JobMutationResponse.
+type JobMutationResponse struct {
+	Job JobDetails `json:"job"`
+}
+
 // JobResultURLsResponse defines model for JobResultURLsResponse.
 type JobResultURLsResponse struct {
 	Items []ResultFileURL `json:"items"`
 }
 
+// JobStatus defines model for JobStatus.
+type JobStatus string
+
 // JobSummary defines model for JobSummary.
 type JobSummary struct {
-	CreatedAt time.Time        `json:"created_at"`
-	JobId     string           `json:"job_id"`
-	Status    JobSummaryStatus `json:"status"`
-	UpdatedAt time.Time        `json:"updated_at"`
+	CreatedAt       time.Time `json:"created_at"`
+	CurrentStep     *string   `json:"current_step"`
+	IdempotencyKey  *string   `json:"idempotency_key"`
+	JobId           string    `json:"job_id"`
+	ProgressPercent int       `json:"progress_percent"`
+	Status          JobStatus `json:"status"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
-
-// JobSummaryStatus defines model for JobSummary.Status.
-type JobSummaryStatus string
 
 // ListJobsResponse defines model for ListJobsResponse.
 type ListJobsResponse struct {
 	Items []JobSummary `json:"items"`
+}
+
+// OutputFileRef defines model for OutputFileRef.
+type OutputFileRef struct {
+	FileName  string `json:"file_name"`
+	Key       string `json:"key"`
+	SizeBytes *int   `json:"size_bytes"`
 }
 
 // ResultFileURL defines model for ResultFileURL.
@@ -64,6 +94,20 @@ type ResultFileURL struct {
 	FileName  string    `json:"file_name"`
 	Key       string    `json:"key"`
 	Url       string    `json:"url"`
+}
+
+// SubmitJobRequest defines model for SubmitJobRequest.
+type SubmitJobRequest struct {
+	IdempotencyKey  string  `json:"idempotency_key"`
+	Name            *string `json:"name"`
+	SimulateFailure *bool   `json:"simulate_failure,omitempty"`
+	SourceRef       *string `json:"source_ref"`
+}
+
+// SubmitJobResponse defines model for SubmitJobResponse.
+type SubmitJobResponse struct {
+	Created bool       `json:"created"`
+	Job     JobDetails `json:"job"`
 }
 
 // ListJobsParams defines parameters for ListJobs.
@@ -77,6 +121,9 @@ type GetJobResultUrlsParams struct {
 	TtlSeconds *int `form:"ttl_seconds,omitempty" json:"ttl_seconds,omitempty"`
 }
 
+// SubmitJobJSONRequestBody defines body for SubmitJob for application/json ContentType.
+type SubmitJobJSONRequestBody = SubmitJobRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Health check
@@ -85,9 +132,21 @@ type ServerInterface interface {
 	// List current user jobs
 	// (GET /v1/jobs)
 	ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams)
+	// Submit a reconstruction job asynchronously (idempotent by idempotency_key)
+	// (POST /v1/jobs)
+	SubmitJob(w http.ResponseWriter, r *http.Request)
+	// Get details for a single job
+	// (GET /v1/jobs/{job_id})
+	GetJob(w http.ResponseWriter, r *http.Request, jobId string)
+	// Cancel a queued/running job
+	// (POST /v1/jobs/{job_id}/cancel)
+	CancelJob(w http.ResponseWriter, r *http.Request, jobId string)
 	// Resolve result file URLs for a job
 	// (GET /v1/jobs/{job_id}/result-urls)
 	GetJobResultUrls(w http.ResponseWriter, r *http.Request, jobId string, params GetJobResultUrlsParams)
+	// Retry a failed/cancelled job
+	// (POST /v1/jobs/{job_id}/retry)
+	RetryJob(w http.ResponseWriter, r *http.Request, jobId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -152,6 +211,79 @@ func (siw *ServerInterfaceWrapper) ListJobs(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// SubmitJob operation middleware
+func (siw *ServerInterfaceWrapper) SubmitJob(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitJob(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetJob operation middleware
+func (siw *ServerInterfaceWrapper) GetJob(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", r.PathValue("job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetJob(w, r, jobId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// CancelJob operation middleware
+func (siw *ServerInterfaceWrapper) CancelJob(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", r.PathValue("job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelJob(w, r, jobId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // GetJobResultUrls operation middleware
 func (siw *ServerInterfaceWrapper) GetJobResultUrls(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -182,6 +314,34 @@ func (siw *ServerInterfaceWrapper) GetJobResultUrls(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetJobResultUrls(w, r, jobId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// RetryJob operation middleware
+func (siw *ServerInterfaceWrapper) RetryJob(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", r.PathValue("job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryJob(w, r, jobId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -307,7 +467,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc("GET "+options.BaseURL+"/healthz", wrapper.Healthz)
 	m.HandleFunc("GET "+options.BaseURL+"/v1/jobs", wrapper.ListJobs)
+	m.HandleFunc("POST "+options.BaseURL+"/v1/jobs", wrapper.SubmitJob)
+	m.HandleFunc("GET "+options.BaseURL+"/v1/jobs/{job_id}", wrapper.GetJob)
+	m.HandleFunc("POST "+options.BaseURL+"/v1/jobs/{job_id}/cancel", wrapper.CancelJob)
 	m.HandleFunc("GET "+options.BaseURL+"/v1/jobs/{job_id}/result-urls", wrapper.GetJobResultUrls)
+	m.HandleFunc("POST "+options.BaseURL+"/v1/jobs/{job_id}/retry", wrapper.RetryJob)
 
 	return m
 }

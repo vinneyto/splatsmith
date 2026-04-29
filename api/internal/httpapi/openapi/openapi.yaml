@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Splatmaker API
-  version: 0.1.0
-  description: Core-first API module. Works in standalone mode and is reusable by AWS adapters.
+  version: 0.2.0
+  description: Core-first API module with async orchestration and idempotent job submission.
 servers:
   - url: /
 security:
@@ -22,21 +22,77 @@ components:
           type: string
         mode:
           type: string
+    JobStatus:
+      type: string
+      enum: [new, queued, in_progress, done, failed, cancelled]
     JobSummary:
       type: object
-      required: [job_id, status, created_at, updated_at]
+      required: [job_id, status, progress_percent, created_at, updated_at]
       properties:
         job_id:
           type: string
         status:
+          $ref: '#/components/schemas/JobStatus'
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        current_step:
           type: string
-          enum: [new, in_progress, done, failed]
+          nullable: true
+        idempotency_key:
+          type: string
+          nullable: true
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    JobDetails:
+      type: object
+      required: [summary, attempt, simulate_failure, output_files]
+      properties:
+        summary:
+          $ref: '#/components/schemas/JobSummary'
+        attempt:
+          type: integer
+          minimum: 1
+        source_ref:
+          type: string
+          nullable: true
+        simulate_failure:
+          type: boolean
+        error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_heartbeat_at:
+          type: string
+          format: date-time
+          nullable: true
+        output_files:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutputFileRef'
+    OutputFileRef:
+      type: object
+      required: [key, file_name]
+      properties:
+        key:
+          type: string
+        file_name:
+          type: string
+        size_bytes:
+          type: integer
+          nullable: true
     ListJobsResponse:
       type: object
       required: [items]
@@ -45,6 +101,36 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JobSummary'
+    SubmitJobRequest:
+      type: object
+      required: [idempotency_key]
+      properties:
+        idempotency_key:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          nullable: true
+        source_ref:
+          type: string
+          nullable: true
+        simulate_failure:
+          type: boolean
+          default: false
+    SubmitJobResponse:
+      type: object
+      required: [created, job]
+      properties:
+        created:
+          type: boolean
+        job:
+          $ref: '#/components/schemas/JobDetails'
+    JobMutationResponse:
+      type: object
+      required: [job]
+      properties:
+        job:
+          $ref: '#/components/schemas/JobDetails'
     ResultFileURL:
       type: object
       required: [key, file_name, url, expires_at]
@@ -85,6 +171,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+
   /v1/jobs:
     get:
       operationId: listJobs
@@ -116,6 +203,137 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: submitJob
+      summary: Submit a reconstruction job asynchronously (idempotent by idempotency_key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitJobRequest'
+      responses:
+        '202':
+          description: Job queued or idempotent replay resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/jobs/{job_id}:
+    get:
+      operationId: getJob
+      summary: Get details for a single job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/jobs/{job_id}/cancel:
+    post:
+      operationId: cancelJob
+      summary: Cancel a queued/running job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobMutationResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Job cannot be cancelled in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/jobs/{job_id}/retry:
+    post:
+      operationId: retryJob
+      summary: Retry a failed/cancelled job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job queued for retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobMutationResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Job cannot be retried in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/jobs/{job_id}/result-urls:
     get:
       operationId: getJobResultUrls

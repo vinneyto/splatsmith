@@ -5,6 +5,7 @@ import "github.com/vinneyto/splatmaker/api/internal/core"
 type Module struct {
 	AuthProvider      core.AuthProvider
 	JobRepository     core.JobRepository
+	JobDispatcher     core.JobDispatcher
 	ResultURLResolver core.ResultURLResolver
 
 	closers []func() error
@@ -20,12 +21,17 @@ func NewModule(cfg Config) (*Module, error) {
 		_ = repo.Close()
 		return nil, err
 	}
+	dispatcher := NewSimulatedJobDispatcher(repo)
 
 	module := &Module{
 		AuthProvider:      NewDevAuthProvider(cfg),
 		JobRepository:     repo,
+		JobDispatcher:     dispatcher,
 		ResultURLResolver: resolver,
-		closers:           []func() error{repo.Close},
+		closers: []func() error{
+			dispatcher.Close,
+			repo.Close,
+		},
 	}
 	return module, nil
 }

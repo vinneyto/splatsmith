@@ -16,9 +16,11 @@ type JobStatus string
 
 const (
 	JobStatusNew        JobStatus = "new"
+	JobStatusQueued     JobStatus = "queued"
 	JobStatusInProgress JobStatus = "in_progress"
 	JobStatusDone       JobStatus = "done"
 	JobStatusFailed     JobStatus = "failed"
+	JobStatusCancelled  JobStatus = "cancelled"
 )
 
 type JobListFilter struct {
@@ -29,11 +31,14 @@ type JobListFilter struct {
 }
 
 type JobSummary struct {
-	JobID     string
-	UserID    string
-	Status    JobStatus
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	JobID           string
+	UserID          string
+	Status          JobStatus
+	ProgressPercent int
+	CurrentStep     *string
+	IdempotencyKey  *string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 type OutputFileRef struct {
@@ -43,9 +48,15 @@ type OutputFileRef struct {
 }
 
 type JobDetails struct {
-	Summary      JobSummary
-	ErrorMessage *string
-	OutputFiles  []OutputFileRef
+	Summary         JobSummary
+	ErrorMessage    *string
+	OutputFiles     []OutputFileRef
+	Attempt         int
+	SourceRef       *string
+	SimulateFailure bool
+	StartedAt       *time.Time
+	FinishedAt      *time.Time
+	LastHeartbeatAt *time.Time
 }
 
 type ResultFileURL struct {
@@ -53,4 +64,24 @@ type ResultFileURL struct {
 	FileName  string
 	URL       string
 	ExpiresAt time.Time
+}
+
+type SubmitJobRequest struct {
+	IdempotencyKey  string
+	Name            *string
+	SourceRef       *string
+	SimulateFailure bool
+}
+
+type SubmitJobResult struct {
+	Job     JobDetails
+	Created bool
+}
+
+type JobDispatchRequest struct {
+	JobID           string
+	UserID          string
+	SimulateFailure bool
+	IdempotencyKey  string
+	CurrentAttempt  int
 }

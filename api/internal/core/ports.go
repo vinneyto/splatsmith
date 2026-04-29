@@ -12,6 +12,18 @@ type AuthProvider interface {
 type JobRepository interface {
 	List(ctx context.Context, filter JobListFilter) ([]JobSummary, error)
 	GetByID(ctx context.Context, userID, jobID string) (*JobDetails, error)
+	FindByIdempotencyKey(ctx context.Context, userID, idempotencyKey string) (*JobDetails, error)
+	CreateQueued(ctx context.Context, userID string, req SubmitJobRequest) (*JobDetails, error)
+	SetRunning(ctx context.Context, jobID string) error
+	SetProgress(ctx context.Context, jobID string, progressPercent int, currentStep string) error
+	SetDone(ctx context.Context, jobID string, outputFiles []OutputFileRef) error
+	SetFailed(ctx context.Context, jobID, errorMessage string) error
+	SetCancelled(ctx context.Context, userID, jobID string) (*JobDetails, error)
+	ResetForRetry(ctx context.Context, userID, jobID string) (*JobDetails, error)
+}
+
+type JobDispatcher interface {
+	Enqueue(ctx context.Context, req JobDispatchRequest) error
 }
 
 type ResultURLResolver interface {
