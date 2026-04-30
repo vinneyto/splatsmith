@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { ArrowLeftOutlined } from "@ant-design/icons";
+import { Button, Card, Space, Typography } from "antd";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAppSelector } from "@/store/hooks";
@@ -17,12 +18,19 @@ export default function ReconstructionDetailsPage() {
   }, [router, token]);
 
   return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: 24 }}>
-      <p>
-        <Link href="/reconstructions">← Back to list</Link>
-      </p>
-      <h1>Reconstruction {params.id}</h1>
-      <p>Placeholder: detailed reconstruction view will be implemented next.</p>
+    <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
+      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+        <Button icon={<ArrowLeftOutlined />} href="/reconstructions">
+          Back to list
+        </Button>
+
+        <Card>
+          <Typography.Title level={3}>Reconstruction {params.id}</Typography.Title>
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+            Placeholder: detailed reconstruction view will be implemented next.
+          </Typography.Paragraph>
+        </Card>
+      </Space>
     </main>
   );
 }

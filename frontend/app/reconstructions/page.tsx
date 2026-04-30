@@ -1,5 +1,7 @@
 "use client";
 
+import { LogoutOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, List, Space, Tag, Typography } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -23,46 +25,49 @@ export default function ReconstructionsPage() {
   }, [router, token]);
 
   return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: 24 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h1 style={{ marginBottom: 4 }}>Reconstructions</h1>
-          {user && <p style={{ marginTop: 0, color: "#667085" }}>Signed in as {user.email}</p>}
-        </div>
-        <button
-          onClick={() => {
-            dispatch(logout());
-            router.push("/login");
-          }}
-        >
-          Logout
-        </button>
-      </header>
+    <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
+      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+        <Space style={{ width: "100%", justifyContent: "space-between" }} align="start">
+          <div>
+            <Typography.Title level={2} style={{ marginBottom: 0 }}>
+              Reconstructions
+            </Typography.Title>
+            {user ? (
+              <Typography.Text type="secondary">Signed in as {user.email}</Typography.Text>
+            ) : null}
+          </div>
+          <Button
+            icon={<LogoutOutlined />}
+            onClick={() => {
+              dispatch(logout());
+              router.push("/login");
+            }}
+          >
+            Logout
+          </Button>
+        </Space>
 
-      {isLoading && <p>Loading reconstructions...</p>}
-      {isError && (
-        <p style={{ color: "#b42318" }}>Failed to load reconstructions: {JSON.stringify(error)}</p>
-      )}
-      {!isLoading && !isError && data?.items.length === 0 && <p>No reconstructions yet.</p>}
+        {isError ? (
+          <Alert type="error" showIcon message={`Failed to load reconstructions: ${JSON.stringify(error)}`} />
+        ) : null}
 
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
-        {data?.items.map((job) => (
-          <li key={job.job_id} style={{ background: "white", padding: 16, borderRadius: 10 }}>
-            <Link
-              href={`/reconstructions/${job.job_id}`}
-              style={{ textDecoration: "none", color: "inherit" }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <strong>{job.job_id}</strong>
-                <span>Status: {job.status}</span>
-              </div>
-              <small style={{ color: "#667085" }}>
-                Updated: {new Date(job.updated_at).toLocaleString()}
-              </small>
-            </Link>
-          </li>
-        ))}
-      </ul>
+        <Card>
+          <List
+            loading={isLoading}
+            locale={{ emptyText: "No reconstructions yet." }}
+            dataSource={data?.items ?? []}
+            renderItem={(job) => (
+              <List.Item>
+                <List.Item.Meta
+                  title={<Link href={`/reconstructions/${job.job_id}`}>{job.job_id}</Link>}
+                  description={`Updated: ${new Date(job.updated_at).toLocaleString()}`}
+                />
+                <Tag>{job.status}</Tag>
+              </List.Item>
+            )}
+          />
+        </Card>
+      </Space>
     </main>
   );
 }
