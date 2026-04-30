@@ -67,12 +67,11 @@ func (m *Module) routes() {
 	})
 	m.engine.GET("/scalar/*filepath", gin.WrapH(http.StripPrefix("/scalar/", http.FileServer(http.FS(scalarUIFS)))))
 
-	apiHandler := HandlerWithOptions(m.apiServer, StdHTTPServerOptions{
-		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
-			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+	RegisterHandlersWithOptions(m.engine, m.apiServer, GinServerOptions{
+		ErrorHandler: func(c *gin.Context, err error, _ int) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		},
 	})
-	m.engine.NoRoute(gin.WrapH(apiHandler))
 }
 
 func (m *Module) handleOpenAPIYAML(c *gin.Context) {
@@ -99,10 +98,4 @@ func loadOpenAPISpec() ([]byte, []byte) {
 		return yamlSpec, []byte(`{"error":"failed to marshal openapi spec"}`)
 	}
 	return yamlSpec, jsonSpec
-}
-
-func writeJSON(w http.ResponseWriter, status int, body any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
 }

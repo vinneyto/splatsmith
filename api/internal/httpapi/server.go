@@ -1,11 +1,11 @@
 package httpapi
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
@@ -17,27 +17,27 @@ func NewAPIServer(deps Dependencies) *APIServer {
 	return &APIServer{deps: deps}
 }
 
-func (s *APIServer) Healthz(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, HealthResponse{
+func (s *APIServer) Healthz(c *gin.Context) {
+	c.JSON(http.StatusOK, HealthResponse{
 		Status: "ok",
 		Mode:   s.deps.Mode,
 	})
 }
 
-func (s *APIServer) Login(w http.ResponseWriter, r *http.Request) {
+func (s *APIServer) Login(c *gin.Context) {
 	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
-	result, err := s.deps.LoginService.LoginWithPassword(r.Context(), req.Username, req.Password)
+	result, err := s.deps.LoginService.LoginWithPassword(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
-		s.writeDomainError(w, err)
+		s.writeDomainError(c, err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, LoginResponse{
+	c.JSON(http.StatusOK, LoginResponse{
 		AccessToken: result.Token,
 		TokenType:   Bearer,
 		User: AuthUser{
@@ -47,8 +47,8 @@ func (s *APIServer) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *APIServer) ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams) {
-	identity, ok := s.authenticate(w, r)
+func (s *APIServer) ListJobs(c *gin.Context, params ListJobsParams) {
+	identity, ok := s.authenticate(c)
 	if !ok {
 		return
 	}
@@ -71,9 +71,9 @@ func (s *APIServer) ListJobs(w http.ResponseWriter, r *http.Request, params List
 		offset = 0
 	}
 
-	items, err := s.deps.JobService.ListJobs(r.Context(), identity.UserID, limit, offset)
+	items, err := s.deps.JobService.ListJobs(c.Request.Context(), identity.UserID, limit, offset)
 	if err != nil {
-		s.writeDomainError(w, err)
+		s.writeDomainError(c, err)
 		return
 	}
 
@@ -82,22 +82,22 @@ func (s *APIServer) ListJobs(w http.ResponseWriter, r *http.Request, params List
 		respItems = append(respItems, toAPISummary(j))
 	}
 
-	writeJSON(w, http.StatusOK, ListJobsResponse{Items: respItems})
+	c.JSON(http.StatusOK, ListJobsResponse{Items: respItems})
 }
 
-func (s *APIServer) SubmitJob(w http.ResponseWriter, r *http.Request) {
-	identity, ok := s.authenticate(w, r)
+func (s *APIServer) SubmitJob(c *gin.Context) {
+	identity, ok := s.authenticate(c)
 	if !ok {
 		return
 	}
 
 	var req SubmitJobJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid json body"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid json body"})
 		return
 	}
 
-	submit, err := s.deps.JobService.SubmitJob(r.Context(), identity.UserID, core.SubmitJobRequest{
+	submit, err := s.deps.JobService.SubmitJob(c.Request.Context(), identity.UserID, core.SubmitJobRequest{
 		IdempotencyKey: req.IdempotencyKey,
 		Name:           req.Name,
 		SourceRef:      req.SourceRef,
@@ -109,63 +109,63 @@ func (s *APIServer) SubmitJob(w http.ResponseWriter, r *http.Request) {
 		}(),
 	})
 	if err != nil {
-		s.writeDomainError(w, err)
+		s.writeDomainError(c, err)
 		return
 	}
 
-	writeJSON(w, http.StatusAccepted, SubmitJobResponse{
+	c.JSON(http.StatusAccepted, SubmitJobResponse{
 		Created: submit.Created,
 		Job:     toAPIDetails(submit.Job),
 	})
 }
 
-func (s *APIServer) GetJob(w http.ResponseWriter, r *http.Request, jobID string) {
-	identity, ok := s.authenticate(w, r)
+func (s *APIServer) GetJob(c *gin.Context, jobID string) {
+	identity, ok := s.authenticate(c)
 	if !ok {
 		return
 	}
-	item, err := s.deps.JobService.GetJob(r.Context(), identity.UserID, jobID)
+	item, err := s.deps.JobService.GetJob(c.Request.Context(), identity.UserID, jobID)
 	if err != nil {
-		s.writeDomainError(w, err)
+		s.writeDomainError(c, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toAPIDetails(*item))
+	c.JSON(http.StatusOK, toAPIDetails(*item))
 }
 
-func (s *APIServer) CancelJob(w http.ResponseWriter, r *http.Request, jobID string) {
-	identity, ok := s.authenticate(w, r)
+func (s *APIServer) CancelJob(c *gin.Context, jobID string) {
+	identity, ok := s.authenticate(c)
 	if !ok {
 		return
 	}
-	item, err := s.deps.JobService.CancelJob(r.Context(), identity.UserID, jobID)
+	item, err := s.deps.JobService.CancelJob(c.Request.Context(), identity.UserID, jobID)
 	if err != nil {
-		s.writeDomainError(w, err)
+		s.writeDomainError(c, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, JobMutationResponse{Job: toAPIDetails(*item)})
+	c.JSON(http.StatusOK, JobMutationResponse{Job: toAPIDetails(*item)})
 }
 
-func (s *APIServer) RetryJob(w http.ResponseWriter, r *http.Request, jobID string) {
-	identity, ok := s.authenticate(w, r)
+func (s *APIServer) RetryJob(c *gin.Context, jobID string) {
+	identity, ok := s.authenticate(c)
 	if !ok {
 		return
 	}
-	item, err := s.deps.JobService.RetryJob(r.Context(), identity.UserID, jobID)
+	item, err := s.deps.JobService.RetryJob(c.Request.Context(), identity.UserID, jobID)
 	if err != nil {
-		s.writeDomainError(w, err)
+		s.writeDomainError(c, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, JobMutationResponse{Job: toAPIDetails(*item)})
+	c.JSON(http.StatusOK, JobMutationResponse{Job: toAPIDetails(*item)})
 }
 
-func (s *APIServer) GetJobResultUrls(w http.ResponseWriter, r *http.Request, jobID string, params GetJobResultUrlsParams) {
-	identity, ok := s.authenticate(w, r)
+func (s *APIServer) GetJobResultUrls(c *gin.Context, jobID string, params GetJobResultUrlsParams) {
+	identity, ok := s.authenticate(c)
 	if !ok {
 		return
 	}
 
 	if jobID == "" {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "job_id is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "job_id is required"})
 		return
 	}
 
@@ -174,9 +174,9 @@ func (s *APIServer) GetJobResultUrls(w http.ResponseWriter, r *http.Request, job
 		ttlSeconds = *params.TtlSeconds
 	}
 
-	urls, err := s.deps.JobService.GetJobResultURLs(r.Context(), identity.UserID, jobID, time.Duration(ttlSeconds)*time.Second)
+	urls, err := s.deps.JobService.GetJobResultURLs(c.Request.Context(), identity.UserID, jobID, time.Duration(ttlSeconds)*time.Second)
 	if err != nil {
-		s.writeDomainError(w, err)
+		s.writeDomainError(c, err)
 		return
 	}
 
@@ -189,32 +189,32 @@ func (s *APIServer) GetJobResultUrls(w http.ResponseWriter, r *http.Request, job
 			ExpiresAt: u.ExpiresAt.UTC(),
 		})
 	}
-	writeJSON(w, http.StatusOK, JobResultURLsResponse{Items: respItems})
+	c.JSON(http.StatusOK, JobResultURLsResponse{Items: respItems})
 }
 
-func (s *APIServer) authenticate(w http.ResponseWriter, r *http.Request) (core.UserIdentity, bool) {
-	identity, err := s.deps.AuthService.Authenticate(r.Context(), r.Header.Get("Authorization"))
+func (s *APIServer) authenticate(c *gin.Context) (core.UserIdentity, bool) {
+	identity, err := s.deps.AuthService.Authenticate(c.Request.Context(), c.GetHeader("Authorization"))
 	if err != nil {
-		s.writeDomainError(w, err)
+		s.writeDomainError(c, err)
 		return core.UserIdentity{}, false
 	}
 	return identity, true
 }
 
-func (s *APIServer) writeDomainError(w http.ResponseWriter, err error) {
+func (s *APIServer) writeDomainError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, core.ErrUnauthorized), errors.Is(err, core.ErrInvalidToken), errors.Is(err, core.ErrInvalidCredentials):
-		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, core.ErrJobNotFound):
-		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, core.ErrIdempotencyKeyRequired), errors.Is(err, core.ErrInvalidArgument):
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, core.ErrJobNotCancelable), errors.Is(err, core.ErrJobNotRetryable), errors.Is(err, core.ErrConflict):
-		writeJSON(w, http.StatusConflict, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, core.ErrNotImplemented):
-		writeJSON(w, http.StatusNotImplemented, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusNotImplemented, ErrorResponse{Error: err.Error()})
 	default:
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
 	}
 }
 
