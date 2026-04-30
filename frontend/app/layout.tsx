@@ -1,10 +1,11 @@
+import "./globals.css";
 import type { ReactNode } from "react";
 import { Providers } from "@/components/providers";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: "Inter, Arial, sans-serif", background: "#f5f7fb" }}>
+      <body className="min-h-screen antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

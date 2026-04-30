@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAppSelector } from "@/store/hooks";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ReconstructionDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -17,12 +19,21 @@ export default function ReconstructionDetailsPage() {
   }, [router, token]);
 
   return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: 24 }}>
-      <p>
-        <Link href="/reconstructions">← Back to list</Link>
-      </p>
-      <h1>Reconstruction {params.id}</h1>
-      <p>Placeholder: detailed reconstruction view will be implemented next.</p>
+    <main className="mx-auto max-w-3xl p-6">
+      <Link href="/reconstructions" className={buttonVariants({ variant: "outline", size: "sm" }) + " mb-4 inline-flex"}>
+        Back to list
+      </Link>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Reconstruction {params.id}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Placeholder: detailed reconstruction view will be implemented next.
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -6,6 +6,9 @@ import { useEffect } from "react";
 import { useListJobsQuery } from "@/store/api/splatmakerApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ReconstructionsPage() {
   const router = useRouter();
@@ -23,46 +26,51 @@ export default function ReconstructionsPage() {
   }, [router, token]);
 
   return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: 24 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <main className="mx-auto max-w-3xl p-6">
+      <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 style={{ marginBottom: 4 }}>Reconstructions</h1>
-          {user && <p style={{ marginTop: 0, color: "#667085" }}>Signed in as {user.email}</p>}
+          <h1 className="text-2xl font-semibold">Reconstructions</h1>
+          {user ? <p className="text-sm text-muted-foreground">Signed in as {user.email}</p> : null}
         </div>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => {
             dispatch(logout());
             router.push("/login");
           }}
         >
           Logout
-        </button>
+        </Button>
       </header>
 
-      {isLoading && <p>Loading reconstructions...</p>}
-      {isError && (
-        <p style={{ color: "#b42318" }}>Failed to load reconstructions: {JSON.stringify(error)}</p>
-      )}
-      {!isLoading && !isError && data?.items.length === 0 && <p>No reconstructions yet.</p>}
+      {isLoading ? <p className="text-sm text-muted-foreground">Loading reconstructions...</p> : null}
+      {isError ? (
+        <p className="text-sm text-red-600">Failed to load reconstructions: {JSON.stringify(error)}</p>
+      ) : null}
+      {!isLoading && !isError && data?.items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No reconstructions yet.</p>
+      ) : null}
 
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
+      <div className="grid gap-3">
         {data?.items.map((job) => (
-          <li key={job.job_id} style={{ background: "white", padding: 16, borderRadius: 10 }}>
-            <Link
-              href={`/reconstructions/${job.job_id}`}
-              style={{ textDecoration: "none", color: "inherit" }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <strong>{job.job_id}</strong>
-                <span>Status: {job.status}</span>
-              </div>
-              <small style={{ color: "#667085" }}>
+          <Card key={job.job_id}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">
+                <Link href={`/reconstructions/${job.job_id}`} className="hover:underline">
+                  {job.job_id}
+                </Link>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between pt-0">
+              <p className="text-xs text-muted-foreground">
                 Updated: {new Date(job.updated_at).toLocaleString()}
-              </small>
-            </Link>
-          </li>
+              </p>
+              <Badge variant="secondary">{job.status}</Badge>
+            </CardContent>
+          </Card>
         ))}
-      </ul>
+      </div>
     </main>
   );
 }

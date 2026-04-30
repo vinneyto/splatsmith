@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useLoginMutation } from "@/store/api/splatmakerApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAuth } from "@/store/slices/authSlice";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,34 +44,43 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-      <form
-        onSubmit={handleSubmit}
-        style={{ width: 360, background: "white", padding: 24, borderRadius: 12 }}
-      >
-        <h1 style={{ marginTop: 0 }}>Splatmaker Login</h1>
-        <label style={{ display: "block", marginBottom: 12 }}>
-          Username
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            style={{ width: "100%", marginTop: 6, padding: 8 }}
-          />
-        </label>
-        <label style={{ display: "block", marginBottom: 16 }}>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: "100%", marginTop: 6, padding: 8 }}
-          />
-        </label>
-        {error && <p style={{ color: "#b42318" }}>{error}</p>}
-        <button type="submit" disabled={isLoading} style={{ width: "100%", padding: 10 }}>
-          {isLoading ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
+    <main className="grid min-h-screen place-items-center p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Splatmaker Login</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="username" className="text-sm font-medium">
+                Username
+              </label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium">
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? "Signing in..." : "Sign in"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </main>
   );
 }
