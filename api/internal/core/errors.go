@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrUnauthorized           = errors.New("unauthorized")
 	ErrInvalidToken           = errors.New("invalid token")
+	ErrInvalidCredentials     = errors.New("invalid credentials")
 	ErrNotImplemented         = errors.New("not implemented")
 	ErrJobNotFound            = errors.New("job not found")
 	ErrInvalidArgument        = errors.New("invalid argument")

@@ -7,4 +7,6 @@ type Config struct {
 	DevToken            string `yaml:"dev_token"`
 	DevUserID           string `yaml:"dev_user_id"`
 	DevUserEmail        string `yaml:"dev_user_email"`
+	DevUsername         string `yaml:"dev_username"`
+	DevPassword         string `yaml:"dev_password"`
 }

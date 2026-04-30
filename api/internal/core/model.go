@@ -12,6 +12,11 @@ type AuthClaims struct {
 	Email  string
 }
 
+type LoginResult struct {
+	Token string
+	User  UserIdentity
+}
+
 type JobStatus string
 
 const (

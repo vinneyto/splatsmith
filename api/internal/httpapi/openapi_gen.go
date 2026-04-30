@@ -28,6 +28,17 @@ const (
 	Queued     JobStatus = "queued"
 )
 
+// Defines values for LoginResponseTokenType.
+const (
+	Bearer LoginResponseTokenType = "Bearer"
+)
+
+// AuthUser defines model for AuthUser.
+type AuthUser struct {
+	Email  string `json:"email"`
+	UserId string `json:"user_id"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error string `json:"error"`
@@ -81,6 +92,22 @@ type ListJobsResponse struct {
 	Items []JobSummary `json:"items"`
 }
 
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Password string `json:"password"`
+	Username string `json:"username"`
+}
+
+// LoginResponse defines model for LoginResponse.
+type LoginResponse struct {
+	AccessToken string                 `json:"access_token"`
+	TokenType   LoginResponseTokenType `json:"token_type"`
+	User        AuthUser               `json:"user"`
+}
+
+// LoginResponseTokenType defines model for LoginResponse.TokenType.
+type LoginResponseTokenType string
+
 // OutputFileRef defines model for OutputFileRef.
 type OutputFileRef struct {
 	FileName  string `json:"file_name"`
@@ -121,6 +148,9 @@ type GetJobResultUrlsParams struct {
 	TtlSeconds *int `form:"ttl_seconds,omitempty" json:"ttl_seconds,omitempty"`
 }
 
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
 // SubmitJobJSONRequestBody defines body for SubmitJob for application/json ContentType.
 type SubmitJobJSONRequestBody = SubmitJobRequest
 
@@ -129,6 +159,9 @@ type ServerInterface interface {
 	// Health check
 	// (GET /healthz)
 	Healthz(w http.ResponseWriter, r *http.Request)
+	// Username/password login (standalone)
+	// (POST /v1/auth/login)
+	Login(w http.ResponseWriter, r *http.Request)
 	// List current user jobs
 	// (GET /v1/jobs)
 	ListJobs(w http.ResponseWriter, r *http.Request, params ListJobsParams)
@@ -164,6 +197,21 @@ func (siw *ServerInterfaceWrapper) Healthz(w http.ResponseWriter, r *http.Reques
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Healthz(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// Login operation middleware
+func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Login(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -466,6 +514,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc("GET "+options.BaseURL+"/healthz", wrapper.Healthz)
+	m.HandleFunc("POST "+options.BaseURL+"/v1/auth/login", wrapper.Login)
 	m.HandleFunc("GET "+options.BaseURL+"/v1/jobs", wrapper.ListJobs)
 	m.HandleFunc("POST "+options.BaseURL+"/v1/jobs", wrapper.SubmitJob)
 	m.HandleFunc("GET "+options.BaseURL+"/v1/jobs/{job_id}", wrapper.GetJob)

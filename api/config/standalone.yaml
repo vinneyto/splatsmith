@@ -8,3 +8,5 @@ standalone:
   dev_token: dev-token
   dev_user_id: dev-user
   dev_user_email: dev@example.com
+  dev_username: dev
+  dev_password: devpass
