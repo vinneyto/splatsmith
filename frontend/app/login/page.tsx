@@ -2,10 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { useLoginMutation } from "@/store/api/splatmakerApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAuth } from "@/store/slices/authSlice";
@@ -21,7 +17,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (token) router.replace("/reconstructions");
+    if (token) {
+      router.replace("/reconstructions");
+    }
   }, [router, token]);
 
   async function handleSubmit(event: FormEvent) {
@@ -43,47 +41,34 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative grid min-h-screen place-items-center p-6">
-      <div className="absolute right-6 top-6">
-        <ThemeToggle />
-      </div>
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Splatmaker Login</CardTitle>
-          <CardDescription>Sign in to manage reconstructions.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="username">
-                Username
-              </label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="password">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
-            {error && <p className="text-sm text-rose-600 dark:text-rose-300">{error}</p>}
-            <Button className="w-full" disabled={isLoading} type="submit">
-              {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ width: 360, background: "white", padding: 24, borderRadius: 12 }}
+      >
+        <h1 style={{ marginTop: 0 }}>Splatmaker Login</h1>
+        <label style={{ display: "block", marginBottom: 12 }}>
+          Username
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            style={{ width: "100%", marginTop: 6, padding: 8 }}
+          />
+        </label>
+        <label style={{ display: "block", marginBottom: 16 }}>
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: "100%", marginTop: 6, padding: 8 }}
+          />
+        </label>
+        {error && <p style={{ color: "#b42318" }}>{error}</p>}
+        <button type="submit" disabled={isLoading} style={{ width: "100%", padding: 10 }}>
+          {isLoading ? "Signing in..." : "Sign in"}
+        </button>
+      </form>
     </main>
   );
 }
