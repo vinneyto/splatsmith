@@ -54,21 +54,19 @@ export default function ReconstructionsPage() {
 
       <div className="grid gap-3">
         {data?.items.map((job) => (
-          <Card key={job.job_id}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">
-                <Link href={`/reconstructions/${job.job_id}`} className="hover:underline">
-                  {job.job_id}
-                </Link>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between pt-0">
-              <p className="text-xs text-muted-foreground">
-                Updated: {new Date(job.updated_at).toLocaleString()}
-              </p>
-              <Badge variant="secondary">{job.status}</Badge>
-            </CardContent>
-          </Card>
+          <Link key={job.job_id} href={`/reconstructions/${job.job_id}`} className="group block">
+            <Card className="transition-colors group-hover:bg-accent/40">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{job.job_id}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between pt-0">
+                <p className="text-xs text-muted-foreground">
+                  Updated: {new Date(job.updated_at).toLocaleString()}
+                </p>
+                <Badge variant="secondary">{job.status}</Badge>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
     </main>

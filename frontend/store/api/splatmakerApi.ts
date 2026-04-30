@@ -17,15 +17,49 @@ export type LoginResponse = {
   };
 };
 
+export type JobStatus = "new" | "queued" | "in_progress" | "done" | "failed" | "cancelled";
+
 export type JobItem = {
   job_id: string;
-  status: "new" | "in_progress" | "done" | "failed";
+  status: JobStatus;
+  progress_percent: number;
+  current_step?: string | null;
+  idempotency_key?: string | null;
   created_at: string;
   updated_at: string;
 };
 
 export type ListJobsResponse = {
   items: JobItem[];
+};
+
+export type OutputFileRef = {
+  key: string;
+  file_name: string;
+  size_bytes?: number | null;
+};
+
+export type JobDetails = {
+  summary: JobItem;
+  attempt: number;
+  source_ref?: string | null;
+  simulate_failure: boolean;
+  error_message?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  last_heartbeat_at?: string | null;
+  output_files: OutputFileRef[];
+};
+
+export type ResultFileURL = {
+  key: string;
+  file_name: string;
+  url: string;
+  expires_at: string;
+};
+
+export type JobResultUrlsResponse = {
+  items: ResultFileURL[];
 };
 
 export const splatmakerApi = createApi({
@@ -58,7 +92,22 @@ export const splatmakerApi = createApi({
       }),
       providesTags: ["Jobs"],
     }),
+    getJob: builder.query<JobDetails, string>({
+      query: (jobId) => ({
+        url: `/v1/jobs/${jobId}`,
+        method: "GET",
+      }),
+      providesTags: (_result, _error, jobId) => [{ type: "Jobs", id: jobId }],
+    }),
+    getJobResultUrls: builder.query<JobResultUrlsResponse, { jobId: string; ttlSeconds?: number }>({
+      query: ({ jobId, ttlSeconds }) => ({
+        url: `/v1/jobs/${jobId}/result-urls`,
+        method: "GET",
+        params: ttlSeconds ? { ttl_seconds: ttlSeconds } : undefined,
+      }),
+      providesTags: (_result, _error, arg) => [{ type: "Jobs", id: arg.jobId }],
+    }),
   }),
 });
 
-export const { useLoginMutation, useListJobsQuery } = splatmakerApi;
+export const { useLoginMutation, useListJobsQuery, useGetJobQuery, useGetJobResultUrlsQuery } = splatmakerApi;
