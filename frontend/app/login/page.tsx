@@ -1,23 +1,19 @@
 "use client";
 
-import { LockOutlined, UserOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Form, Input, Space, Typography } from "antd";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useLoginMutation } from "@/store/api/splatmakerApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAuth } from "@/store/slices/authSlice";
-
-type LoginFormValues = {
-  username: string;
-  password: string;
-};
 
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.token);
   const [login, { isLoading }] = useLoginMutation();
+
+  const [username, setUsername] = useState("dev");
+  const [password, setPassword] = useState("devpass");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,11 +22,12 @@ export default function LoginPage() {
     }
   }, [router, token]);
 
-  async function handleSubmit(values: LoginFormValues) {
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setError(null);
 
     try {
-      const result = await login(values).unwrap();
+      const result = await login({ username, password }).unwrap();
       dispatch(
         setAuth({
           token: result.access_token,
@@ -44,36 +41,34 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 16 }}>
-      <Card style={{ width: 380 }}>
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Splatmaker Login
-          </Typography.Title>
-
-          {error ? <Alert type="error" message={error} showIcon /> : null}
-
-          <Form<LoginFormValues>
-            layout="vertical"
-            initialValues={{ username: "dev", password: "devpass" }}
-            onFinish={handleSubmit}
-          >
-            <Form.Item label="Username" name="username" rules={[{ required: true }]}>
-              <Input prefix={<UserOutlined />} autoComplete="username" />
-            </Form.Item>
-
-            <Form.Item label="Password" name="password" rules={[{ required: true }]}>
-              <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
-            </Form.Item>
-
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Button type="primary" htmlType="submit" loading={isLoading} block>
-                Sign in
-              </Button>
-            </Form.Item>
-          </Form>
-        </Space>
-      </Card>
+    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ width: 360, background: "white", padding: 24, borderRadius: 12 }}
+      >
+        <h1 style={{ marginTop: 0 }}>Splatmaker Login</h1>
+        <label style={{ display: "block", marginBottom: 12 }}>
+          Username
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            style={{ width: "100%", marginTop: 6, padding: 8 }}
+          />
+        </label>
+        <label style={{ display: "block", marginBottom: 16 }}>
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: "100%", marginTop: 6, padding: 8 }}
+          />
+        </label>
+        {error && <p style={{ color: "#b42318" }}>{error}</p>}
+        <button type="submit" disabled={isLoading} style={{ width: "100%", padding: 10 }}>
+          {isLoading ? "Signing in..." : "Sign in"}
+        </button>
+      </form>
     </main>
   );
 }
