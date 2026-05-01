@@ -35,9 +35,9 @@ type ResultURLResolver interface {
 }
 
 type PipelineSettingsRepository interface {
-	List(ctx context.Context, filter PipelineSettingsListFilter) ([]PipelineSettings, error)
-	GetByID(ctx context.Context, userID, recordID string) (*PipelineSettings, error)
-	Create(ctx context.Context, input CreatePipelineSettingsInput) (*PipelineSettings, error)
-	Update(ctx context.Context, input UpdatePipelineSettingsInput) (*PipelineSettings, error)
+	List(ctx context.Context, filter PipelineSettingsListFilter) ([]PipelineSettingsRecord, error)
+	GetByID(ctx context.Context, userID, recordID string) (*PipelineSettingsRecord, error)
+	Create(ctx context.Context, input CreatePipelineSettingsInput) (*PipelineSettingsRecord, error)
+	Update(ctx context.Context, input UpdatePipelineSettingsInput) (*PipelineSettingsRecord, error)
 	Delete(ctx context.Context, userID, recordID string) error
 }
