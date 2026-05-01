@@ -7,7 +7,7 @@ type Module struct {
 	LoginProvider                      core.LoginProvider
 	ReconstructionJobRepository        core.ReconstructionJobRepository
 	ReconstructionSubmissionDispatcher core.ReconstructionSubmissionDispatcher
-	ResultURLResolver                  core.ResultURLResolver
+	ReconstructionResultURLResolver    core.ReconstructionResultURLResolver
 
 	closers []func() error
 }
@@ -30,7 +30,7 @@ func NewModule(cfg Config) (*Module, error) {
 		LoginProvider:                      devAuth,
 		ReconstructionJobRepository:        repo,
 		ReconstructionSubmissionDispatcher: dispatcher,
-		ResultURLResolver:                  resolver,
+		ReconstructionResultURLResolver:    resolver,
 		closers: []func() error{
 			dispatcher.Close,
 			repo.Close,

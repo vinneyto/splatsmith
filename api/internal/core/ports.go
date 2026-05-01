@@ -30,6 +30,6 @@ type ReconstructionSubmissionDispatcher interface {
 	Enqueue(ctx context.Context, req ReconstructionSubmissionRequest) error
 }
 
-type ResultURLResolver interface {
+type ReconstructionResultURLResolver interface {
 	ResolveResultURL(ctx context.Context, key string, ttl time.Duration) (ResultFileURL, error)
 }

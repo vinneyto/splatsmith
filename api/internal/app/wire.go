@@ -32,7 +32,7 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 			Mode:                     cfg.Mode,
 			AuthService:              services.NewAuthService(module.AuthProvider),
 			LoginService:             services.NewLoginService(module.LoginProvider),
-			ReconstructionJobService: services.NewReconstructionReconstructionJobService(module.ReconstructionJobRepository, module.ReconstructionSubmissionDispatcher, module.ResultURLResolver),
+			ReconstructionJobService: services.NewReconstructionJobService(module.ReconstructionJobRepository, module.ReconstructionSubmissionDispatcher, module.ReconstructionResultURLResolver),
 			ResultURLTTL:             ttl,
 			Close:                    module.Close,
 		}, nil
@@ -45,7 +45,7 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 			Mode:                     cfg.Mode,
 			AuthService:              services.NewAuthService(module.AuthProvider),
 			LoginService:             services.NewLoginService(module.LoginProvider),
-			ReconstructionJobService: services.NewReconstructionReconstructionJobService(module.ReconstructionJobRepository, module.ReconstructionSubmissionDispatcher, module.ResultURLResolver),
+			ReconstructionJobService: services.NewReconstructionJobService(module.ReconstructionJobRepository, module.ReconstructionSubmissionDispatcher, module.ReconstructionResultURLResolver),
 			ResultURLTTL:             900,
 			Close: func() error {
 				_ = module

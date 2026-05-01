@@ -12,10 +12,10 @@ import (
 type ReconstructionJobService struct {
 	repo       core.ReconstructionJobRepository
 	dispatcher core.ReconstructionSubmissionDispatcher
-	resolver   core.ResultURLResolver
+	resolver   core.ReconstructionResultURLResolver
 }
 
-func NewReconstructionReconstructionJobService(repo core.ReconstructionJobRepository, dispatcher core.ReconstructionSubmissionDispatcher, resolver core.ResultURLResolver) *ReconstructionJobService {
+func NewReconstructionJobService(repo core.ReconstructionJobRepository, dispatcher core.ReconstructionSubmissionDispatcher, resolver core.ReconstructionResultURLResolver) *ReconstructionJobService {
 	return &ReconstructionJobService{repo: repo, dispatcher: dispatcher, resolver: resolver}
 }
 

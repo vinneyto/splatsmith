@@ -7,7 +7,7 @@ type Module struct {
 	LoginProvider                      core.LoginProvider
 	ReconstructionJobRepository        core.ReconstructionJobRepository
 	ReconstructionSubmissionDispatcher core.ReconstructionSubmissionDispatcher
-	ResultURLResolver                  core.ResultURLResolver
+	ReconstructionResultURLResolver    core.ReconstructionResultURLResolver
 }
 
 func NewModule(_ Config) (*Module, error) {
@@ -16,6 +16,6 @@ func NewModule(_ Config) (*Module, error) {
 		LoginProvider:                      &loginProviderStub{},
 		ReconstructionJobRepository:        &jobRepositoryStub{},
 		ReconstructionSubmissionDispatcher: &jobDispatcherStub{},
-		ResultURLResolver:                  &resultURLResolverStub{},
+		ReconstructionResultURLResolver:    &resultURLResolverStub{},
 	}, nil
 }
