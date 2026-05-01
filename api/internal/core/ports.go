@@ -33,3 +33,11 @@ type JobDispatcher interface {
 type ResultURLResolver interface {
 	ResolveResultURL(ctx context.Context, key string, ttl time.Duration) (ResultFileURL, error)
 }
+
+type PipelineSettingsRepository interface {
+	List(ctx context.Context, filter PipelineSettingsListFilter) ([]PipelineSettings, error)
+	GetByID(ctx context.Context, userID, recordID string) (*PipelineSettings, error)
+	Create(ctx context.Context, input CreatePipelineSettingsInput) (*PipelineSettings, error)
+	Update(ctx context.Context, input UpdatePipelineSettingsInput) (*PipelineSettings, error)
+	Delete(ctx context.Context, userID, recordID string) error
+}
