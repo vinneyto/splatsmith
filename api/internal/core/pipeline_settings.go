@@ -10,88 +10,88 @@ const (
 )
 
 type PipelineSettings struct {
-	VideoProcessing VideoProcessingSettings
-	Reconstruction  ReconstructionSettings
-	Training        TrainingSettings
-	PostProcessing  PostProcessingSettings
-	SphericalCamera SphericalCameraSettings
-	Segmentation    SegmentationSettings
+	VideoProcessing VideoProcessingSettings `json:"videoProcessing"`
+	Reconstruction  ReconstructionSettings  `json:"reconstruction"`
+	Training        TrainingSettings        `json:"training"`
+	PostProcessing  PostProcessingSettings  `json:"postProcessing"`
+	SphericalCamera SphericalCameraSettings `json:"sphericalCamera"`
+	Segmentation    SegmentationSettings    `json:"segmentation"`
 }
 
 type VideoProcessingSettings struct {
-	MaxNumImages       string
-	VideoStartTime     string
-	VideoStopTime      string
-	FilterBlurryImages string
+	MaxNumImages       string `json:"maxNumImages"`
+	VideoStartTime     string `json:"videoStartTime"`
+	VideoStopTime      string `json:"videoStopTime"`
+	FilterBlurryImages string `json:"filterBlurryImages"`
 }
 
 type ReconstructionSettings struct {
-	Enable                          string
-	SoftwareName                    string
-	EnableEnhancedFeatureExtraction string
-	MatchingMethod                  string
-	EnableFlHeuristic               string
-	FlHeuristicValue                string
-	EnableFlMetric                  string
-	FlMetricValue                   string
-	PosePriors                      PosePriorsSettings
+	Enable                          string             `json:"enable"`
+	SoftwareName                    string             `json:"softwareName"`
+	EnableEnhancedFeatureExtraction string             `json:"enableEnhancedFeatureExtraction"`
+	MatchingMethod                  string             `json:"matchingMethod"`
+	EnableFlHeuristic               string             `json:"enableFlHeuristic"`
+	FlHeuristicValue                string             `json:"flHeuristicValue"`
+	EnableFlMetric                  string             `json:"enableFlMetric"`
+	FlMetricValue                   string             `json:"flMetricValue"`
+	PosePriors                      PosePriorsSettings `json:"posePriors"`
 }
 
 type PosePriorsSettings struct {
-	UsePosePriorColmapModelFiles string
-	UsePosePriorTransformJSON    PosePriorTransformJSONSettings
+	UsePosePriorColmapModelFiles string                         `json:"usePosePriorColmapModelFiles"`
+	UsePosePriorTransformJSON    PosePriorTransformJSONSettings `json:"usePosePriorTransformJson"`
 }
 
 type PosePriorTransformJSONSettings struct {
-	Enable               string
-	SourceCoordinateName string
-	PoseIsWorldToCam     string
+	Enable               string `json:"enable"`
+	SourceCoordinateName string `json:"sourceCoordinateName"`
+	PoseIsWorldToCam     string `json:"poseIsWorldToCam"`
 }
 
 type TrainingSettings struct {
-	Enable             string
-	MaxSteps           string
-	Model              string
-	ThreeDISP          string
-	PreserveSceneScale string
-	EnableDepthLoss    string
+	Enable             string `json:"enable"`
+	MaxSteps           string `json:"maxSteps"`
+	Model              string `json:"model"`
+	ThreeDIsp          string `json:"3dIsp"`
+	PreserveSceneScale string `json:"preserveSceneScale"`
+	EnableDepthLoss    string `json:"enableDepthLoss"`
 }
 
 type PostProcessingSettings struct {
-	CropOutputBounds  string
-	CropMode          string
-	CleanSplat        string
-	EnableSpz         string
-	EnableSog         string
-	EnableUsdz        string
-	EnableVideoExport string
-	PlyCoords         string
-	SpzCoords         string
-	SogCoords         string
-	UsdzCoords        string
+	CropOutputBounds  string `json:"cropOutputBounds"`
+	CropMode          string `json:"cropMode"`
+	CleanSplat        string `json:"cleanSplat"`
+	EnableSpz         string `json:"enableSpz"`
+	EnableSog         string `json:"enableSog"`
+	EnableUsdz        string `json:"enableUsdz"`
+	EnableVideoExport string `json:"enableVideoExport"`
+	PlyCoords         string `json:"plyCoords"`
+	SpzCoords         string `json:"spzCoords"`
+	SogCoords         string `json:"sogCoords"`
+	UsdzCoords        string `json:"usdzCoords"`
 }
 
 type SphericalCameraSettings struct {
-	Enable                       string
-	CubeFacesToRemove            string
-	OptimizeSequentialFrameOrder string
+	Enable                       string `json:"enable"`
+	CubeFacesToRemove            string `json:"cubeFacesToRemove"`
+	OptimizeSequentialFrameOrder string `json:"optimizeSequentialFrameOrder"`
 }
 
 type SegmentationSettings struct {
-	BackgroundRemoval BackgroundRemovalSettings
-	ObjectRemoval     ObjectRemovalSettings
+	BackgroundRemoval BackgroundRemovalSettings `json:"backgroundRemoval"`
+	ObjectRemoval     ObjectRemovalSettings     `json:"objectRemoval"`
 }
 
 type BackgroundRemovalSettings struct {
-	Enable        string
-	Model         string
-	MaskThreshold string
+	Enable        string `json:"enable"`
+	Model         string `json:"model"`
+	MaskThreshold string `json:"maskThreshold"`
 }
 
 type ObjectRemovalSettings struct {
-	Enable  string
-	Action  string
-	Objects string
+	Enable  string `json:"enable"`
+	Action  string `json:"action"`
+	Objects string `json:"objects"`
 }
 
 func NewDefaultPipelineSettings() PipelineSettings {
@@ -124,7 +124,7 @@ func NewDefaultPipelineSettings() PipelineSettings {
 			Enable:             "true",
 			MaxSteps:           "15000",
 			Model:              "splatfacto",
-			ThreeDISP:          "none",
+			ThreeDIsp:          "none",
 			PreserveSceneScale: "false",
 			EnableDepthLoss:    "false",
 		},
@@ -162,13 +162,13 @@ func NewDefaultPipelineSettings() PipelineSettings {
 }
 
 type PipelineSettingsRecord struct {
-	RecordID   string
-	UserID     string
-	RecordType PipelineSettingsRecordType
-	Name       string
-	Settings   PipelineSettings
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	RecordID   string                     `json:"recordId"`
+	UserID     string                     `json:"userId"`
+	RecordType PipelineSettingsRecordType `json:"recordType"`
+	Name       string                     `json:"name"`
+	Settings   PipelineSettings           `json:"settings"`
+	CreatedAt  time.Time                  `json:"createdAt"`
+	UpdatedAt  time.Time                  `json:"updatedAt"`
 }
 
 type PipelineSettingsListFilter struct {
