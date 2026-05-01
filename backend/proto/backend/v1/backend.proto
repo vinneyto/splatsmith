@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package backend.v1;
+
+option go_package = "github.com/vinneyto/splatmaker/backend/gen/backend/v1;backendv1";
+
+service SplatIndexService {
+  rpc InitFromPlyUrl(InitFromPlyUrlRequest) returns (InitFromPlyUrlResponse);
+}
+
+message InitFromPlyUrlRequest {
+  string ply_url = 1;
+  double cell_size = 2;
+  uint32 max_depth = 3;
+}
+
+message InitFromPlyUrlResponse {
+  Octree tree = 1;
+}
+
+message Octree {
+  Vec3 min = 1;
+  Vec3 max = 2;
+  repeated OctreeNode nodes = 3;
+}
+
+message OctreeNode {
+  uint32 id = 1;
+  uint32 depth = 2;
+  Vec3 min = 3;
+  Vec3 max = 4;
+  repeated uint32 children_ids = 5;
+  repeated uint32 splat_indices = 6;
+}
+
+message Vec3 {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
