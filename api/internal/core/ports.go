@@ -13,7 +13,7 @@ type LoginProvider interface {
 	LoginWithPassword(ctx context.Context, username, password string) (LoginResult, error)
 }
 
-type JobRepository interface {
+type ReconstructionJobRepository interface {
 	List(ctx context.Context, filter JobListFilter) ([]JobSummary, error)
 	GetByID(ctx context.Context, userID, jobID string) (*JobDetails, error)
 	FindByIdempotencyKey(ctx context.Context, userID, idempotencyKey string) (*JobDetails, error)
@@ -26,8 +26,8 @@ type JobRepository interface {
 	ResetForRetry(ctx context.Context, userID, jobID string) (*JobDetails, error)
 }
 
-type JobDispatcher interface {
-	Enqueue(ctx context.Context, req JobDispatchRequest) error
+type ReconstructionSubmissionDispatcher interface {
+	Enqueue(ctx context.Context, req ReconstructionSubmissionRequest) error
 }
 
 type ResultURLResolver interface {

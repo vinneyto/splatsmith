@@ -16,11 +16,11 @@ import (
 	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
-type SQLiteJobRepository struct {
+type SQLiteReconstructionJobRepository struct {
 	db *sql.DB
 }
 
-func NewSQLiteJobRepository(sqlitePath string) (*SQLiteJobRepository, error) {
+func NewSQLiteReconstructionJobRepository(sqlitePath string) (*SQLiteReconstructionJobRepository, error) {
 	if sqlitePath == "" {
 		return nil, fmt.Errorf("sqlite path is empty")
 	}
@@ -33,7 +33,7 @@ func NewSQLiteJobRepository(sqlitePath string) (*SQLiteJobRepository, error) {
 		return nil, err
 	}
 
-	repo := &SQLiteJobRepository{db: db}
+	repo := &SQLiteReconstructionJobRepository{db: db}
 	if err := repo.initSchema(); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -45,9 +45,9 @@ func NewSQLiteJobRepository(sqlitePath string) (*SQLiteJobRepository, error) {
 	return repo, nil
 }
 
-func (r *SQLiteJobRepository) Close() error { return r.db.Close() }
+func (r *SQLiteReconstructionJobRepository) Close() error { return r.db.Close() }
 
-func (r *SQLiteJobRepository) initSchema() error {
+func (r *SQLiteReconstructionJobRepository) initSchema() error {
 	const schema = `
 CREATE TABLE IF NOT EXISTS jobs (
   job_id TEXT PRIMARY KEY,
@@ -110,7 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_job_output_files_job_id ON job_output_files(job_i
 	return nil
 }
 
-func (r *SQLiteJobRepository) ensureJobsColumn(columnName, columnType string) error {
+func (r *SQLiteReconstructionJobRepository) ensureJobsColumn(columnName, columnType string) error {
 	rows, err := r.db.Query(`PRAGMA table_info(jobs)`)
 	if err != nil {
 		return err
@@ -145,7 +145,7 @@ func (r *SQLiteJobRepository) ensureJobsColumn(columnName, columnType string) er
 	return err
 }
 
-func (r *SQLiteJobRepository) seedMockData() error {
+func (r *SQLiteReconstructionJobRepository) seedMockData() error {
 	var count int
 	if err := r.db.QueryRow(`SELECT COUNT(1) FROM jobs`).Scan(&count); err != nil {
 		return err
@@ -207,7 +207,7 @@ VALUES
 	return tx.Commit()
 }
 
-func (r *SQLiteJobRepository) List(ctx context.Context, filter core.JobListFilter) ([]core.JobSummary, error) {
+func (r *SQLiteReconstructionJobRepository) List(ctx context.Context, filter core.JobListFilter) ([]core.JobSummary, error) {
 	if filter.UserID == "" {
 		return nil, fmt.Errorf("user id is required")
 	}
@@ -247,7 +247,7 @@ WHERE user_id = ?`
 	return result, nil
 }
 
-func (r *SQLiteJobRepository) GetByID(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (r *SQLiteReconstructionJobRepository) GetByID(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
 	row := r.db.QueryRowContext(ctx, `
 SELECT job_id, user_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, source_ref, simulate_failure,
        started_at, finished_at, last_heartbeat_at, created_at, updated_at
@@ -270,7 +270,7 @@ WHERE user_id = ? AND job_id = ?`, userID, jobID)
 	return details, nil
 }
 
-func (r *SQLiteJobRepository) FindByIdempotencyKey(ctx context.Context, userID, idempotencyKey string) (*core.JobDetails, error) {
+func (r *SQLiteReconstructionJobRepository) FindByIdempotencyKey(ctx context.Context, userID, idempotencyKey string) (*core.JobDetails, error) {
 	if idempotencyKey == "" {
 		return nil, nil
 	}
@@ -294,7 +294,7 @@ WHERE user_id = ? AND idempotency_key = ?`, userID, idempotencyKey)
 	return details, nil
 }
 
-func (r *SQLiteJobRepository) CreateQueued(ctx context.Context, userID string, req core.SubmitJobRequest) (*core.JobDetails, error) {
+func (r *SQLiteReconstructionJobRepository) CreateQueued(ctx context.Context, userID string, req core.SubmitJobRequest) (*core.JobDetails, error) {
 	if userID == "" {
 		return nil, core.ErrInvalidArgument
 	}
@@ -335,7 +335,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
 	return r.GetByID(ctx, userID, jobID)
 }
 
-func (r *SQLiteJobRepository) SetRunning(ctx context.Context, jobID string) error {
+func (r *SQLiteReconstructionJobRepository) SetRunning(ctx context.Context, jobID string) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	res, err := r.db.ExecContext(ctx, `
 UPDATE jobs
@@ -363,7 +363,7 @@ WHERE job_id = ? AND status IN (?, ?)`,
 	return nil
 }
 
-func (r *SQLiteJobRepository) SetProgress(ctx context.Context, jobID string, progressPercent int, currentStep string) error {
+func (r *SQLiteReconstructionJobRepository) SetProgress(ctx context.Context, jobID string, progressPercent int, currentStep string) error {
 	if progressPercent < 0 {
 		progressPercent = 0
 	}
@@ -395,7 +395,7 @@ WHERE job_id = ? AND status = ?`,
 	return nil
 }
 
-func (r *SQLiteJobRepository) SetDone(ctx context.Context, jobID string, outputFiles []core.OutputFileRef) error {
+func (r *SQLiteReconstructionJobRepository) SetDone(ctx context.Context, jobID string, outputFiles []core.OutputFileRef) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -440,7 +440,7 @@ VALUES (?, ?, ?, ?)`, jobID, out.Key, out.FileName, out.SizeBytes); err != nil {
 	return tx.Commit()
 }
 
-func (r *SQLiteJobRepository) SetFailed(ctx context.Context, jobID, errorMessage string) error {
+func (r *SQLiteReconstructionJobRepository) SetFailed(ctx context.Context, jobID, errorMessage string) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	res, err := r.db.ExecContext(ctx, `
 UPDATE jobs
@@ -470,7 +470,7 @@ WHERE job_id = ? AND status IN (?, ?, ?)`,
 	return nil
 }
 
-func (r *SQLiteJobRepository) SetCancelled(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (r *SQLiteReconstructionJobRepository) SetCancelled(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	res, err := r.db.ExecContext(ctx, `
 UPDATE jobs
@@ -499,7 +499,7 @@ WHERE user_id = ? AND job_id = ? AND status IN (?, ?, ?)`,
 	return r.GetByID(ctx, userID, jobID)
 }
 
-func (r *SQLiteJobRepository) ResetForRetry(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (r *SQLiteReconstructionJobRepository) ResetForRetry(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	res, err := r.db.ExecContext(ctx, `
 UPDATE jobs
@@ -527,7 +527,7 @@ WHERE user_id = ? AND job_id = ? AND status IN (?, ?)`,
 	return r.GetByID(ctx, userID, jobID)
 }
 
-func (r *SQLiteJobRepository) loadOutputs(ctx context.Context, jobID string) ([]core.OutputFileRef, error) {
+func (r *SQLiteReconstructionJobRepository) loadOutputs(ctx context.Context, jobID string) ([]core.OutputFileRef, error) {
 	rows, err := r.db.QueryContext(ctx, `
 SELECT file_key, file_name, size_bytes
 FROM job_output_files

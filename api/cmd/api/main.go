@@ -33,11 +33,11 @@ func main() {
 	}()
 
 	apiModule := httpapi.NewModule(cfg.API, httpapi.Dependencies{
-		Mode:                string(runtime.Mode),
-		AuthService:         runtime.AuthService,
-		LoginService:        runtime.LoginService,
-		JobService:          runtime.JobService,
-		DefaultResultURLTTL: time.Duration(runtime.ResultURLTTL) * time.Second,
+		Mode:                     string(runtime.Mode),
+		AuthService:              runtime.AuthService,
+		LoginService:             runtime.LoginService,
+		ReconstructionJobService: runtime.ReconstructionJobService,
+		DefaultResultURLTTL:      time.Duration(runtime.ResultURLTTL) * time.Second,
 	})
 
 	srv := &http.Server{

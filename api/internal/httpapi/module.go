@@ -11,11 +11,11 @@ import (
 )
 
 type Dependencies struct {
-	Mode                string
-	AuthService         *services.AuthService
-	LoginService        *services.LoginService
-	JobService          *services.JobService
-	DefaultResultURLTTL time.Duration
+	Mode                     string
+	AuthService              *services.AuthService
+	LoginService             *services.LoginService
+	ReconstructionJobService *services.ReconstructionJobService
+	DefaultResultURLTTL      time.Duration
 }
 
 type Module struct {

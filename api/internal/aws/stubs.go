@@ -62,7 +62,7 @@ func (s *jobRepositoryStub) ResetForRetry(context.Context, string, string) (*cor
 	return nil, fmt.Errorf("aws job repository: %w", core.ErrNotImplemented)
 }
 
-func (s *jobDispatcherStub) Enqueue(context.Context, core.JobDispatchRequest) error {
+func (s *jobDispatcherStub) Enqueue(context.Context, core.ReconstructionSubmissionRequest) error {
 	return fmt.Errorf("aws dispatcher: %w", core.ErrNotImplemented)
 }
 

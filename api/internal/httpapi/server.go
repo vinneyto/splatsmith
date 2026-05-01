@@ -71,7 +71,7 @@ func (s *APIServer) ListJobs(c *gin.Context, params ListJobsParams) {
 		offset = 0
 	}
 
-	items, err := s.deps.JobService.ListJobs(c.Request.Context(), identity.UserID, limit, offset)
+	items, err := s.deps.ReconstructionJobService.ListJobs(c.Request.Context(), identity.UserID, limit, offset)
 	if err != nil {
 		s.writeDomainError(c, err)
 		return
@@ -97,7 +97,7 @@ func (s *APIServer) SubmitJob(c *gin.Context) {
 		return
 	}
 
-	submit, err := s.deps.JobService.SubmitJob(c.Request.Context(), identity.UserID, core.SubmitJobRequest{
+	submit, err := s.deps.ReconstructionJobService.SubmitJob(c.Request.Context(), identity.UserID, core.SubmitJobRequest{
 		IdempotencyKey: req.IdempotencyKey,
 		Name:           req.Name,
 		SourceRef:      req.SourceRef,
@@ -124,7 +124,7 @@ func (s *APIServer) GetJob(c *gin.Context, jobID string) {
 	if !ok {
 		return
 	}
-	item, err := s.deps.JobService.GetJob(c.Request.Context(), identity.UserID, jobID)
+	item, err := s.deps.ReconstructionJobService.GetJob(c.Request.Context(), identity.UserID, jobID)
 	if err != nil {
 		s.writeDomainError(c, err)
 		return
@@ -137,7 +137,7 @@ func (s *APIServer) CancelJob(c *gin.Context, jobID string) {
 	if !ok {
 		return
 	}
-	item, err := s.deps.JobService.CancelJob(c.Request.Context(), identity.UserID, jobID)
+	item, err := s.deps.ReconstructionJobService.CancelJob(c.Request.Context(), identity.UserID, jobID)
 	if err != nil {
 		s.writeDomainError(c, err)
 		return
@@ -150,7 +150,7 @@ func (s *APIServer) RetryJob(c *gin.Context, jobID string) {
 	if !ok {
 		return
 	}
-	item, err := s.deps.JobService.RetryJob(c.Request.Context(), identity.UserID, jobID)
+	item, err := s.deps.ReconstructionJobService.RetryJob(c.Request.Context(), identity.UserID, jobID)
 	if err != nil {
 		s.writeDomainError(c, err)
 		return
@@ -174,7 +174,7 @@ func (s *APIServer) GetJobResultUrls(c *gin.Context, jobID string, params GetJob
 		ttlSeconds = *params.TtlSeconds
 	}
 
-	urls, err := s.deps.JobService.GetJobResultURLs(c.Request.Context(), identity.UserID, jobID, time.Duration(ttlSeconds)*time.Second)
+	urls, err := s.deps.ReconstructionJobService.GetJobResultURLs(c.Request.Context(), identity.UserID, jobID, time.Duration(ttlSeconds)*time.Second)
 	if err != nil {
 		s.writeDomainError(c, err)
 		return

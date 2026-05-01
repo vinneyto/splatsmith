@@ -83,7 +83,7 @@ type SubmitJobResult struct {
 	Created bool
 }
 
-type JobDispatchRequest struct {
+type ReconstructionSubmissionRequest struct {
 	JobID           string
 	UserID          string
 	SimulateFailure bool

@@ -3,17 +3,17 @@ package standalone
 import "github.com/vinneyto/splatmaker/api/internal/core"
 
 type Module struct {
-	AuthProvider      core.AuthProvider
-	LoginProvider     core.LoginProvider
-	JobRepository     core.JobRepository
-	JobDispatcher     core.JobDispatcher
-	ResultURLResolver core.ResultURLResolver
+	AuthProvider                       core.AuthProvider
+	LoginProvider                      core.LoginProvider
+	ReconstructionJobRepository        core.ReconstructionJobRepository
+	ReconstructionSubmissionDispatcher core.ReconstructionSubmissionDispatcher
+	ResultURLResolver                  core.ResultURLResolver
 
 	closers []func() error
 }
 
 func NewModule(cfg Config) (*Module, error) {
-	repo, err := NewSQLiteJobRepository(cfg.SQLitePath)
+	repo, err := NewSQLiteReconstructionJobRepository(cfg.SQLitePath)
 	if err != nil {
 		return nil, err
 	}
@@ -22,15 +22,15 @@ func NewModule(cfg Config) (*Module, error) {
 		_ = repo.Close()
 		return nil, err
 	}
-	dispatcher := NewSimulatedJobDispatcher(repo)
+	dispatcher := NewSimulatedReconstructionSubmissionDispatcher(repo)
 
 	devAuth := NewDevAuthProvider(cfg)
 	module := &Module{
-		AuthProvider:      devAuth,
-		LoginProvider:     devAuth,
-		JobRepository:     repo,
-		JobDispatcher:     dispatcher,
-		ResultURLResolver: resolver,
+		AuthProvider:                       devAuth,
+		LoginProvider:                      devAuth,
+		ReconstructionJobRepository:        repo,
+		ReconstructionSubmissionDispatcher: dispatcher,
+		ResultURLResolver:                  resolver,
 		closers: []func() error{
 			dispatcher.Close,
 			repo.Close,

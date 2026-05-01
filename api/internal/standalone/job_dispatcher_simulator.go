@@ -9,18 +9,18 @@ import (
 	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
-type SimulatedJobDispatcher struct {
-	repo core.JobRepository
+type SimulatedReconstructionSubmissionDispatcher struct {
+	repo core.ReconstructionJobRepository
 
-	queue chan core.JobDispatchRequest
+	queue chan core.ReconstructionSubmissionRequest
 	stop  chan struct{}
 	wg    sync.WaitGroup
 }
 
-func NewSimulatedJobDispatcher(repo core.JobRepository) *SimulatedJobDispatcher {
-	d := &SimulatedJobDispatcher{
+func NewSimulatedReconstructionSubmissionDispatcher(repo core.ReconstructionJobRepository) *SimulatedReconstructionSubmissionDispatcher {
+	d := &SimulatedReconstructionSubmissionDispatcher{
 		repo:  repo,
-		queue: make(chan core.JobDispatchRequest, 128),
+		queue: make(chan core.ReconstructionSubmissionRequest, 128),
 		stop:  make(chan struct{}),
 	}
 	d.wg.Add(1)
@@ -28,7 +28,7 @@ func NewSimulatedJobDispatcher(repo core.JobRepository) *SimulatedJobDispatcher 
 	return d
 }
 
-func (d *SimulatedJobDispatcher) Enqueue(_ context.Context, req core.JobDispatchRequest) error {
+func (d *SimulatedReconstructionSubmissionDispatcher) Enqueue(_ context.Context, req core.ReconstructionSubmissionRequest) error {
 	select {
 	case d.queue <- req:
 		return nil
@@ -37,13 +37,13 @@ func (d *SimulatedJobDispatcher) Enqueue(_ context.Context, req core.JobDispatch
 	}
 }
 
-func (d *SimulatedJobDispatcher) Close() error {
+func (d *SimulatedReconstructionSubmissionDispatcher) Close() error {
 	close(d.stop)
 	d.wg.Wait()
 	return nil
 }
 
-func (d *SimulatedJobDispatcher) loop() {
+func (d *SimulatedReconstructionSubmissionDispatcher) loop() {
 	defer d.wg.Done()
 	for {
 		select {
@@ -55,7 +55,7 @@ func (d *SimulatedJobDispatcher) loop() {
 	}
 }
 
-func (d *SimulatedJobDispatcher) runSimulation(req core.JobDispatchRequest) {
+func (d *SimulatedReconstructionSubmissionDispatcher) runSimulation(req core.ReconstructionSubmissionRequest) {
 	ctx := context.Background()
 	if err := d.repo.SetRunning(ctx, req.JobID); err != nil {
 		return

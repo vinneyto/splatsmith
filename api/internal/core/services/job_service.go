@@ -9,17 +9,17 @@ import (
 	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
-type JobService struct {
-	repo       core.JobRepository
-	dispatcher core.JobDispatcher
+type ReconstructionJobService struct {
+	repo       core.ReconstructionJobRepository
+	dispatcher core.ReconstructionSubmissionDispatcher
 	resolver   core.ResultURLResolver
 }
 
-func NewJobService(repo core.JobRepository, dispatcher core.JobDispatcher, resolver core.ResultURLResolver) *JobService {
-	return &JobService{repo: repo, dispatcher: dispatcher, resolver: resolver}
+func NewReconstructionReconstructionJobService(repo core.ReconstructionJobRepository, dispatcher core.ReconstructionSubmissionDispatcher, resolver core.ResultURLResolver) *ReconstructionJobService {
+	return &ReconstructionJobService{repo: repo, dispatcher: dispatcher, resolver: resolver}
 }
 
-func (s *JobService) SubmitJob(ctx context.Context, userID string, req core.SubmitJobRequest) (core.SubmitJobResult, error) {
+func (s *ReconstructionJobService) SubmitJob(ctx context.Context, userID string, req core.SubmitJobRequest) (core.SubmitJobResult, error) {
 	idempotencyKey := strings.TrimSpace(req.IdempotencyKey)
 	if idempotencyKey == "" {
 		return core.SubmitJobResult{}, core.ErrIdempotencyKeyRequired
@@ -45,7 +45,7 @@ func (s *JobService) SubmitJob(ctx context.Context, userID string, req core.Subm
 		return core.SubmitJobResult{}, err
 	}
 
-	enqueueErr := s.dispatcher.Enqueue(ctx, core.JobDispatchRequest{
+	enqueueErr := s.dispatcher.Enqueue(ctx, core.ReconstructionSubmissionRequest{
 		JobID:           created.Summary.JobID,
 		UserID:          userID,
 		SimulateFailure: created.SimulateFailure,
@@ -64,18 +64,18 @@ func (s *JobService) SubmitJob(ctx context.Context, userID string, req core.Subm
 	return core.SubmitJobResult{Job: *resolved, Created: true}, nil
 }
 
-func (s *JobService) ListJobs(ctx context.Context, userID string, limit, offset int) ([]core.JobSummary, error) {
+func (s *ReconstructionJobService) ListJobs(ctx context.Context, userID string, limit, offset int) ([]core.JobSummary, error) {
 	return s.repo.List(ctx, core.JobListFilter{UserID: userID, Limit: limit, Offset: offset})
 }
 
-func (s *JobService) GetJob(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (s *ReconstructionJobService) GetJob(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
 	if strings.TrimSpace(jobID) == "" {
 		return nil, core.ErrInvalidArgument
 	}
 	return s.repo.GetByID(ctx, userID, jobID)
 }
 
-func (s *JobService) CancelJob(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (s *ReconstructionJobService) CancelJob(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
 	job, err := s.repo.GetByID(ctx, userID, jobID)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (s *JobService) CancelJob(ctx context.Context, userID, jobID string) (*core
 	}
 }
 
-func (s *JobService) RetryJob(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (s *ReconstructionJobService) RetryJob(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
 	job, err := s.repo.GetByID(ctx, userID, jobID)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (s *JobService) RetryJob(ctx context.Context, userID, jobID string) (*core.
 	if err != nil {
 		return nil, err
 	}
-	enqueueErr := s.dispatcher.Enqueue(ctx, core.JobDispatchRequest{
+	enqueueErr := s.dispatcher.Enqueue(ctx, core.ReconstructionSubmissionRequest{
 		JobID:           updated.Summary.JobID,
 		UserID:          userID,
 		SimulateFailure: updated.SimulateFailure,
@@ -115,7 +115,7 @@ func (s *JobService) RetryJob(ctx context.Context, userID, jobID string) (*core.
 	return s.repo.GetByID(ctx, userID, jobID)
 }
 
-func (s *JobService) GetJobResultURLs(
+func (s *ReconstructionJobService) GetJobResultURLs(
 	ctx context.Context,
 	userID, jobID string,
 	ttl time.Duration,
