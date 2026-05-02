@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLoginMutation } from "@/store/api/splatmakerApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAuth } from "@/store/slices/authSlice";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.token);
-  const [login, { isLoading }] = useLoginMutation();
 
   const [username, setUsername] = useState("dev");
   const [password, setPassword] = useState("devpass");
@@ -30,11 +28,9 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const result = await login({ username, password }).unwrap();
       dispatch(
         setAuth({
-          token: result.access_token,
-          user: { userId: username, email: `${username}@local` },
+          token: `local-${username}`,
         })
       );
       router.push("/reconstructions");
@@ -75,8 +71,8 @@ export default function LoginPage() {
               />
             </div>
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Signing in..." : "Sign in"}
+            <Button type="submit" className="w-full">
+              Continue
             </Button>
           </form>
         </CardContent>

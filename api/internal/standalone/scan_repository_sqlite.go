@@ -51,7 +51,6 @@ func (r *SQLiteJobRepository) initSchema() error {
 	const schema = `
 CREATE TABLE IF NOT EXISTS jobs (
   job_id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
   idempotency_key TEXT NOT NULL,
   name TEXT,
   source_ref TEXT,
@@ -66,10 +65,10 @@ CREATE TABLE IF NOT EXISTS jobs (
   last_heartbeat_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  UNIQUE(user_id, idempotency_key)
+  UNIQUE(idempotency_key)
 );
-CREATE INDEX IF NOT EXISTS idx_jobs_user_id_created_at ON jobs(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_jobs_user_status_updated_at ON jobs(user_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_jobs_status_updated_at ON jobs(status, updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS job_output_files (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,7 +103,7 @@ CREATE INDEX IF NOT EXISTS idx_job_output_files_job_id ON job_output_files(job_i
 			return err
 		}
 	}
-	if _, err := r.db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_user_idempotency_key ON jobs(user_id, idempotency_key)`); err != nil {
+	if _, err := r.db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_idempotency_key ON jobs(idempotency_key)`); err != nil {
 		return err
 	}
 	return nil
@@ -162,23 +161,22 @@ func (r *SQLiteJobRepository) seedMockData() error {
 	defer func() { _ = tx.Rollback() }()
 
 	jobs := []struct {
-		id, userID, idem, status string
-		progress                 int
-		step                     *string
-		errorMessage             *string
-		attempt                  int
-		createdAt                time.Time
+		id, idem, status string
+		progress         int
+		step             *string
+		errorMessage     *string
+		attempt          int
+		createdAt        time.Time
 	}{
-		{id: "job-demo-done", userID: "dev-user", idem: "demo-seeded-done", status: string(core.JobStatusDone), progress: 100, step: strPtr("completed"), attempt: 1, createdAt: now.Add(-8 * time.Hour)},
-		{id: "job-demo-failed", userID: "dev-user", idem: "demo-seeded-failed", status: string(core.JobStatusFailed), progress: 62, step: strPtr("reconstruct"), errorMessage: strPtr("reconstruction step failed"), attempt: 1, createdAt: now.Add(-2 * time.Hour)},
+		{id: "job-demo-done", idem: "demo-seeded-done", status: string(core.JobStatusDone), progress: 100, step: strPtr("completed"), attempt: 1, createdAt: now.Add(-8 * time.Hour)},
+		{id: "job-demo-failed", idem: "demo-seeded-failed", status: string(core.JobStatusFailed), progress: 62, step: strPtr("reconstruct"), errorMessage: strPtr("reconstruction step failed"), attempt: 1, createdAt: now.Add(-2 * time.Hour)},
 	}
 
 	for _, job := range jobs {
 		_, err := tx.Exec(`
-INSERT INTO jobs(job_id, user_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, created_at, updated_at, started_at, finished_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+INSERT INTO jobs(job_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, created_at, updated_at, started_at, finished_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			job.id,
-			job.userID,
 			job.idem,
 			job.status,
 			job.progress,
@@ -213,7 +211,7 @@ func (r *SQLiteJobRepository) List(ctx context.Context, filter core.JobListFilte
 	}
 
 	query := `
-SELECT job_id, user_id, idempotency_key, status, progress_percent, current_step, created_at, updated_at
+SELECT job_id, idempotency_key, status, progress_percent, current_step, created_at, updated_at
 FROM jobs
 WHERE 1=1`
 	args := []any{}
@@ -246,7 +244,7 @@ WHERE 1=1`
 
 func (r *SQLiteJobRepository) GetByID(ctx context.Context, jobID string) (*core.JobDetails, error) {
 	query := `
-SELECT job_id, user_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, source_ref, simulate_failure,
+SELECT job_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, source_ref, simulate_failure,
        started_at, finished_at, last_heartbeat_at, created_at, updated_at
 FROM jobs
 WHERE job_id = ?`
@@ -268,15 +266,15 @@ WHERE job_id = ?`
 	return details, nil
 }
 
-func (r *SQLiteJobRepository) FindByIdempotencyKey(ctx context.Context, userID, idempotencyKey string) (*core.JobDetails, error) {
+func (r *SQLiteJobRepository) FindByIdempotencyKey(ctx context.Context, idempotencyKey string) (*core.JobDetails, error) {
 	if idempotencyKey == "" {
 		return nil, nil
 	}
 	row := r.db.QueryRowContext(ctx, `
-SELECT job_id, user_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, source_ref, simulate_failure,
+SELECT job_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, source_ref, simulate_failure,
        started_at, finished_at, last_heartbeat_at, created_at, updated_at
 FROM jobs
-WHERE user_id = ? AND idempotency_key = ?`, userID, idempotencyKey)
+WHERE idempotency_key = ?`, idempotencyKey)
 	details, err := detailsFromRow(row.Scan)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -292,10 +290,7 @@ WHERE user_id = ? AND idempotency_key = ?`, userID, idempotencyKey)
 	return details, nil
 }
 
-func (r *SQLiteJobRepository) CreateQueued(ctx context.Context, userID string, req core.SubmitJobRequest) (*core.JobDetails, error) {
-	if userID == "" {
-		return nil, core.ErrInvalidArgument
-	}
+func (r *SQLiteJobRepository) CreateQueued(ctx context.Context, req core.SubmitJobRequest) (*core.JobDetails, error) {
 	if req.IdempotencyKey == "" {
 		return nil, core.ErrIdempotencyKeyRequired
 	}
@@ -308,12 +303,11 @@ func (r *SQLiteJobRepository) CreateQueued(ctx context.Context, userID string, r
 	}
 	_, err := r.db.ExecContext(ctx, `
 INSERT INTO jobs(
-  job_id, user_id, idempotency_key, name, source_ref, status, progress_percent, current_step,
+  job_id, idempotency_key, name, source_ref, status, progress_percent, current_step,
   attempt, simulate_failure, created_at, updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
 		jobID,
-		userID,
 		req.IdempotencyKey,
 		req.Name,
 		req.SourceRef,
@@ -468,17 +462,16 @@ WHERE job_id = ? AND status IN (?, ?, ?)`,
 	return nil
 }
 
-func (r *SQLiteJobRepository) SetCancelled(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (r *SQLiteJobRepository) SetCancelled(ctx context.Context, jobID string) (*core.JobDetails, error) {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	res, err := r.db.ExecContext(ctx, `
 UPDATE jobs
 SET status = ?, current_step = ?, finished_at = ?, updated_at = ?
-WHERE user_id = ? AND job_id = ? AND status IN (?, ?, ?)`,
+WHERE job_id = ? AND status IN (?, ?, ?)`,
 		string(core.JobStatusCancelled),
 		"cancelled",
 		now,
 		now,
-		userID,
 		jobID,
 		string(core.JobStatusQueued),
 		string(core.JobStatusInProgress),
@@ -497,17 +490,16 @@ WHERE user_id = ? AND job_id = ? AND status IN (?, ?, ?)`,
 	return r.GetByID(ctx, jobID)
 }
 
-func (r *SQLiteJobRepository) ResetForRetry(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (r *SQLiteJobRepository) ResetForRetry(ctx context.Context, jobID string) (*core.JobDetails, error) {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	res, err := r.db.ExecContext(ctx, `
 UPDATE jobs
 SET status = ?, progress_percent = 0, current_step = ?, error_message = NULL,
     started_at = NULL, finished_at = NULL, last_heartbeat_at = NULL, updated_at = ?, attempt = attempt + 1
-WHERE user_id = ? AND job_id = ? AND status IN (?, ?)`,
+WHERE job_id = ? AND status IN (?, ?)`,
 		string(core.JobStatusQueued),
 		"queued",
 		now,
-		userID,
 		jobID,
 		string(core.JobStatusFailed),
 		string(core.JobStatusCancelled),
@@ -555,11 +547,11 @@ ORDER BY id ASC`, jobID)
 
 func summaryFromRow(scanFn func(dest ...any) error) (*core.JobSummary, error) {
 	var (
-		jobID, userID, idempotencyKey, statusRaw, createdAtRaw, updatedAtRaw string
-		progress                                                             int
-		currentStep                                                          sql.NullString
+		jobID, idempotencyKey, statusRaw, createdAtRaw, updatedAtRaw string
+		progress                                                     int
+		currentStep                                                  sql.NullString
 	)
-	if err := scanFn(&jobID, &userID, &idempotencyKey, &statusRaw, &progress, &currentStep, &createdAtRaw, &updatedAtRaw); err != nil {
+	if err := scanFn(&jobID, &idempotencyKey, &statusRaw, &progress, &currentStep, &createdAtRaw, &updatedAtRaw); err != nil {
 		return nil, err
 	}
 	createdAt, err := time.Parse(time.RFC3339Nano, createdAtRaw)
@@ -583,16 +575,15 @@ func summaryFromRow(scanFn func(dest ...any) error) (*core.JobSummary, error) {
 
 func detailsFromRow(scanFn func(dest ...any) error) (*core.JobDetails, error) {
 	var (
-		jobID, userID, idempotencyKey, statusRaw, createdAtRaw, updatedAtRaw string
-		progress                                                             int
-		currentStep, errorMessage, sourceRef                                 sql.NullString
-		attempt                                                              int
-		simulateFailure                                                      int
-		startedAt, finishedAt, heartbeatAt                                   sql.NullString
+		jobID, idempotencyKey, statusRaw, createdAtRaw, updatedAtRaw string
+		progress                                                     int
+		currentStep, errorMessage, sourceRef                         sql.NullString
+		attempt                                                      int
+		simulateFailure                                              int
+		startedAt, finishedAt, heartbeatAt                           sql.NullString
 	)
 	if err := scanFn(
 		&jobID,
-		&userID,
 		&idempotencyKey,
 		&statusRaw,
 		&progress,

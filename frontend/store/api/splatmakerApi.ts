@@ -44,9 +44,6 @@ export const splatmakerApi = createApi({
   }),
   tagTypes: ['Jobs'],
   endpoints: (builder) => ({
-    login: builder.mutation<{ access_token: string; token_type: string; expires_in: number }, { username: string; password: string }>({
-      query: (body) => ({ url: '/v1/auth/login', method: 'POST', body }),
-    }),
     listJobs: builder.query<{ items: JobSummary[] }, { status?: JobStatus; limit?: number; offset?: number } | undefined>({
       query: (params) => ({
         url: '/v1/jobs',
@@ -67,4 +64,4 @@ export const splatmakerApi = createApi({
   }),
 });
 
-export const { useLoginMutation, useListJobsQuery, useGetJobQuery, useGetJobResultUrlsQuery } = splatmakerApi;
+export const { useListJobsQuery, useGetJobQuery, useGetJobResultUrlsQuery } = splatmakerApi;
