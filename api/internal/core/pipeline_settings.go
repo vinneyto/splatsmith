@@ -9,13 +9,15 @@ import (
 type ReconstructionSoftwareName string
 
 const (
-	ReconstructionSoftwareNameGlomap ReconstructionSoftwareName = "glomap"
-	ReconstructionSoftwareNameColmap ReconstructionSoftwareName = "colmap"
+	ReconstructionSoftwareNameGlomap      ReconstructionSoftwareName = "glomap"
+	ReconstructionSoftwareNameColmap      ReconstructionSoftwareName = "colmap"
+	ReconstructionSoftwareNameHloc        ReconstructionSoftwareName = "hloc"
+	ReconstructionSoftwareNameMapAnything ReconstructionSoftwareName = "map_anything"
 )
 
 func (v ReconstructionSoftwareName) IsValid() bool {
 	switch v {
-	case ReconstructionSoftwareNameGlomap, ReconstructionSoftwareNameColmap:
+	case ReconstructionSoftwareNameGlomap, ReconstructionSoftwareNameColmap, ReconstructionSoftwareNameHloc, ReconstructionSoftwareNameMapAnything:
 		return true
 	default:
 		return false
@@ -41,6 +43,7 @@ const (
 	ReconstructionMatchingMethodSequential ReconstructionMatchingMethod = "sequential"
 	ReconstructionMatchingMethodExhaustive ReconstructionMatchingMethod = "exhaustive"
 	ReconstructionMatchingMethodSpatial    ReconstructionMatchingMethod = "spatial"
+	ReconstructionMatchingMethodVocab      ReconstructionMatchingMethod = "vocab"
 	ReconstructionMatchingMethodVocabTree  ReconstructionMatchingMethod = "vocab_tree"
 	ReconstructionMatchingMethodTransitive ReconstructionMatchingMethod = "transitive"
 )
@@ -50,6 +53,7 @@ func (v ReconstructionMatchingMethod) IsValid() bool {
 	case ReconstructionMatchingMethodSequential,
 		ReconstructionMatchingMethodExhaustive,
 		ReconstructionMatchingMethodSpatial,
+		ReconstructionMatchingMethodVocab,
 		ReconstructionMatchingMethodVocabTree,
 		ReconstructionMatchingMethodTransitive:
 		return true
@@ -74,12 +78,24 @@ func (v *ReconstructionMatchingMethod) UnmarshalJSON(data []byte) error {
 type TrainingModel string
 
 const (
-	TrainingModelSplatfacto TrainingModel = "splatfacto"
+	TrainingModelSplatfacto       TrainingModel = "splatfacto"
+	TrainingModelSplatfactoBig    TrainingModel = "splatfacto-big"
+	TrainingModelSplatfactoMCMC   TrainingModel = "splatfacto-mcmc"
+	TrainingModelSplatfactoWLight TrainingModel = "splatfacto-w-light"
+	TrainingModel3DGUT            TrainingModel = "3dgut"
+	TrainingModel3DGRT            TrainingModel = "3dgrt"
+	TrainingModelNerfacto         TrainingModel = "nerfacto"
 )
 
 func (v TrainingModel) IsValid() bool {
 	switch v {
-	case TrainingModelSplatfacto:
+	case TrainingModelSplatfacto,
+		TrainingModelSplatfactoBig,
+		TrainingModelSplatfactoMCMC,
+		TrainingModelSplatfactoWLight,
+		TrainingModel3DGUT,
+		TrainingModel3DGRT,
+		TrainingModelNerfacto:
 		return true
 	default:
 		return false
@@ -102,12 +118,14 @@ func (v *TrainingModel) UnmarshalJSON(data []byte) error {
 type TrainingThreeDIsp string
 
 const (
-	TrainingThreeDIspNone TrainingThreeDIsp = "none"
+	TrainingThreeDIspNone     TrainingThreeDIsp = "none"
+	TrainingThreeDIspBilagrid TrainingThreeDIsp = "bilagrid"
+	TrainingThreeDIspPpisp    TrainingThreeDIsp = "ppisp"
 )
 
 func (v TrainingThreeDIsp) IsValid() bool {
 	switch v {
-	case TrainingThreeDIspNone:
+	case TrainingThreeDIspNone, TrainingThreeDIspBilagrid, TrainingThreeDIspPpisp:
 		return true
 	default:
 		return false
@@ -131,11 +149,12 @@ type PostProcessingCropMode string
 
 const (
 	PostProcessingCropModeEnvironment PostProcessingCropMode = "environment"
+	PostProcessingCropModeRigidBody   PostProcessingCropMode = "rigid_body"
 )
 
 func (v PostProcessingCropMode) IsValid() bool {
 	switch v {
-	case PostProcessingCropModeEnvironment:
+	case PostProcessingCropModeEnvironment, PostProcessingCropModeRigidBody:
 		return true
 	default:
 		return false
@@ -159,11 +178,14 @@ type CoordinateSystem string
 
 const (
 	CoordinateSystemRhyu CoordinateSystem = "rhyu"
+	CoordinateSystemLhyu CoordinateSystem = "lhyu"
+	CoordinateSystemRhzu CoordinateSystem = "rhzu"
+	CoordinateSystemLhzu CoordinateSystem = "lhzu"
 )
 
 func (v CoordinateSystem) IsValid() bool {
 	switch v {
-	case CoordinateSystemRhyu:
+	case CoordinateSystemRhyu, CoordinateSystemLhyu, CoordinateSystemRhzu, CoordinateSystemLhzu:
 		return true
 	default:
 		return false
@@ -187,11 +209,12 @@ type BackgroundRemovalModel string
 
 const (
 	BackgroundRemovalModelU2Net BackgroundRemovalModel = "u2net"
+	BackgroundRemovalModelSAM2  BackgroundRemovalModel = "sam2"
 )
 
 func (v BackgroundRemovalModel) IsValid() bool {
 	switch v {
-	case BackgroundRemovalModelU2Net:
+	case BackgroundRemovalModelU2Net, BackgroundRemovalModelSAM2:
 		return true
 	default:
 		return false
@@ -214,12 +237,13 @@ func (v *BackgroundRemovalModel) UnmarshalJSON(data []byte) error {
 type ObjectRemovalAction string
 
 const (
-	ObjectRemovalActionErase ObjectRemovalAction = "erase"
+	ObjectRemovalActionErase  ObjectRemovalAction = "erase"
+	ObjectRemovalActionRemove ObjectRemovalAction = "remove"
 )
 
 func (v ObjectRemovalAction) IsValid() bool {
 	switch v {
-	case ObjectRemovalActionErase:
+	case ObjectRemovalActionErase, ObjectRemovalActionRemove:
 		return true
 	default:
 		return false
@@ -258,52 +282,52 @@ type PipelineSettings struct {
 }
 
 type VideoProcessingSettings struct {
-	MaxNumImages       int  `json:"maxNumImages"`
-	VideoStartTime     int  `json:"videoStartTime"`
-	VideoStopTime      int  `json:"videoStopTime"`
-	FilterBlurryImages bool `json:"filterBlurryImages"`
+	MaxNumImages       string `json:"maxNumImages"`
+	VideoStartTime     string `json:"videoStartTime"`
+	VideoStopTime      string `json:"videoStopTime"`
+	FilterBlurryImages string `json:"filterBlurryImages"`
 }
 
 type ReconstructionSettings struct {
-	Enable                          bool                         `json:"enable"`
+	Enable                          string                       `json:"enable"`
 	SoftwareName                    ReconstructionSoftwareName   `json:"softwareName"`
-	EnableEnhancedFeatureExtraction bool                         `json:"enableEnhancedFeatureExtraction"`
+	EnableEnhancedFeatureExtraction string                       `json:"enableEnhancedFeatureExtraction"`
 	MatchingMethod                  ReconstructionMatchingMethod `json:"matchingMethod"`
-	EnableFlHeuristic               bool                         `json:"enableFlHeuristic"`
-	FlHeuristicValue                float64                      `json:"flHeuristicValue"`
-	EnableFlMetric                  bool                         `json:"enableFlMetric"`
-	FlMetricValue                   float64                      `json:"flMetricValue"`
+	EnableFlHeuristic               string                       `json:"enableFlHeuristic"`
+	FlHeuristicValue                string                       `json:"flHeuristicValue"`
+	EnableFlMetric                  string                       `json:"enableFlMetric"`
+	FlMetricValue                   string                       `json:"flMetricValue"`
 	PosePriors                      PosePriorsSettings           `json:"posePriors"`
 }
 
 type PosePriorsSettings struct {
-	UsePosePriorColmapModelFiles bool                           `json:"usePosePriorColmapModelFiles"`
+	UsePosePriorColmapModelFiles string                         `json:"usePosePriorColmapModelFiles"`
 	UsePosePriorTransformJSON    PosePriorTransformJSONSettings `json:"usePosePriorTransformJson"`
 }
 
 type PosePriorTransformJSONSettings struct {
-	Enable               bool   `json:"enable"`
+	Enable               string `json:"enable"`
 	SourceCoordinateName string `json:"sourceCoordinateName"`
-	PoseIsWorldToCam     bool   `json:"poseIsWorldToCam"`
+	PoseIsWorldToCam     string `json:"poseIsWorldToCam"`
 }
 
 type TrainingSettings struct {
-	Enable             bool              `json:"enable"`
-	MaxSteps           int               `json:"maxSteps"`
+	Enable             string            `json:"enable"`
+	MaxSteps           string            `json:"maxSteps"`
 	Model              TrainingModel     `json:"model"`
 	ThreeDIsp          TrainingThreeDIsp `json:"3dIsp"`
-	PreserveSceneScale bool              `json:"preserveSceneScale"`
-	EnableDepthLoss    bool              `json:"enableDepthLoss"`
+	PreserveSceneScale string            `json:"preserveSceneScale"`
+	EnableDepthLoss    string            `json:"enableDepthLoss"`
 }
 
 type PostProcessingSettings struct {
-	CropOutputBounds  bool                   `json:"cropOutputBounds"`
+	CropOutputBounds  string                 `json:"cropOutputBounds"`
 	CropMode          PostProcessingCropMode `json:"cropMode"`
-	CleanSplat        bool                   `json:"cleanSplat"`
-	EnableSpz         bool                   `json:"enableSpz"`
-	EnableSog         bool                   `json:"enableSog"`
-	EnableUsdz        bool                   `json:"enableUsdz"`
-	EnableVideoExport bool                   `json:"enableVideoExport"`
+	CleanSplat        string                 `json:"cleanSplat"`
+	EnableSpz         string                 `json:"enableSpz"`
+	EnableSog         string                 `json:"enableSog"`
+	EnableUsdz        string                 `json:"enableUsdz"`
+	EnableVideoExport string                 `json:"enableVideoExport"`
 	PlyCoords         CoordinateSystem       `json:"plyCoords"`
 	SpzCoords         CoordinateSystem       `json:"spzCoords"`
 	SogCoords         CoordinateSystem       `json:"sogCoords"`
@@ -311,9 +335,9 @@ type PostProcessingSettings struct {
 }
 
 type SphericalCameraSettings struct {
-	Enable                       bool   `json:"enable"`
+	Enable                       string `json:"enable"`
 	CubeFacesToRemove            string `json:"cubeFacesToRemove"`
-	OptimizeSequentialFrameOrder bool   `json:"optimizeSequentialFrameOrder"`
+	OptimizeSequentialFrameOrder string `json:"optimizeSequentialFrameOrder"`
 }
 
 type SegmentationSettings struct {
@@ -322,13 +346,13 @@ type SegmentationSettings struct {
 }
 
 type BackgroundRemovalSettings struct {
-	Enable        bool                   `json:"enable"`
+	Enable        string                 `json:"enable"`
 	Model         BackgroundRemovalModel `json:"model"`
-	MaskThreshold float64                `json:"maskThreshold"`
+	MaskThreshold string                 `json:"maskThreshold"`
 }
 
 type ObjectRemovalSettings struct {
-	Enable  bool                `json:"enable"`
+	Enable  string              `json:"enable"`
 	Action  ObjectRemovalAction `json:"action"`
 	Objects string              `json:"objects"`
 }
@@ -336,63 +360,63 @@ type ObjectRemovalSettings struct {
 func NewDefaultPipelineSettings() PipelineSettings {
 	return PipelineSettings{
 		VideoProcessing: VideoProcessingSettings{
-			MaxNumImages:       300,
-			VideoStartTime:     0,
-			VideoStopTime:      -1,
-			FilterBlurryImages: true,
+			MaxNumImages:       "300",
+			VideoStartTime:     "0",
+			VideoStopTime:      "-1",
+			FilterBlurryImages: "true",
 		},
 		Reconstruction: ReconstructionSettings{
-			Enable:                          true,
+			Enable:                          "true",
 			SoftwareName:                    ReconstructionSoftwareNameGlomap,
-			EnableEnhancedFeatureExtraction: false,
+			EnableEnhancedFeatureExtraction: "false",
 			MatchingMethod:                  ReconstructionMatchingMethodSequential,
-			EnableFlHeuristic:               false,
-			FlHeuristicValue:                1.2,
-			EnableFlMetric:                  false,
-			FlMetricValue:                   24,
+			EnableFlHeuristic:               "false",
+			FlHeuristicValue:                "1.2",
+			EnableFlMetric:                  "false",
+			FlMetricValue:                   "24",
 			PosePriors: PosePriorsSettings{
-				UsePosePriorColmapModelFiles: false,
+				UsePosePriorColmapModelFiles: "false",
 				UsePosePriorTransformJSON: PosePriorTransformJSONSettings{
-					Enable:               false,
+					Enable:               "false",
 					SourceCoordinateName: "arkit",
-					PoseIsWorldToCam:     true,
+					PoseIsWorldToCam:     "true",
 				},
 			},
 		},
 		Training: TrainingSettings{
-			Enable:             true,
-			MaxSteps:           15000,
+			Enable:             "true",
+			MaxSteps:           "15000",
 			Model:              TrainingModelSplatfacto,
 			ThreeDIsp:          TrainingThreeDIspNone,
-			PreserveSceneScale: false,
-			EnableDepthLoss:    false,
+			PreserveSceneScale: "false",
+			EnableDepthLoss:    "false",
 		},
 		PostProcessing: PostProcessingSettings{
-			CropOutputBounds:  false,
+			CropOutputBounds:  "false",
 			CropMode:          PostProcessingCropModeEnvironment,
-			CleanSplat:        false,
-			EnableSpz:         true,
-			EnableSog:         true,
-			EnableUsdz:        true,
-			EnableVideoExport: true,
+			CleanSplat:        "false",
+			EnableSpz:         "true",
+			EnableSog:         "true",
+			EnableUsdz:        "true",
+			EnableVideoExport: "true",
 			PlyCoords:         CoordinateSystemRhyu,
 			SpzCoords:         CoordinateSystemRhyu,
 			SogCoords:         CoordinateSystemRhyu,
 			UsdzCoords:        CoordinateSystemRhyu,
 		},
 		SphericalCamera: SphericalCameraSettings{
-			Enable:                       false,
+			Enable:                       "false",
 			CubeFacesToRemove:            "['down', 'up']",
-			OptimizeSequentialFrameOrder: true,
+			OptimizeSequentialFrameOrder: "true",
 		},
 		Segmentation: SegmentationSettings{
 			BackgroundRemoval: BackgroundRemovalSettings{
-				Enable:        false,
+				Enable:        "false",
 				Model:         BackgroundRemovalModelU2Net,
-				MaskThreshold: 0.6,
+				MaskThreshold: "0.6",
 			},
 			ObjectRemoval: ObjectRemovalSettings{
-				Enable:  false,
+				Enable:  "false",
 				Action:  ObjectRemovalActionErase,
 				Objects: "['human']",
 			},

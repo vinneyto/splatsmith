@@ -18,12 +18,16 @@ const (
 
 // Defines values for BackgroundRemovalModel.
 const (
+	Sam2  BackgroundRemovalModel = "sam2"
 	U2net BackgroundRemovalModel = "u2net"
 )
 
 // Defines values for CoordinateSystem.
 const (
+	Lhyu CoordinateSystem = "lhyu"
+	Lhzu CoordinateSystem = "lhzu"
 	Rhyu CoordinateSystem = "rhyu"
+	Rhzu CoordinateSystem = "rhzu"
 )
 
 // Defines values for JobStatus.
@@ -43,12 +47,14 @@ const (
 
 // Defines values for ObjectRemovalAction.
 const (
-	Erase ObjectRemovalAction = "erase"
+	Erase  ObjectRemovalAction = "erase"
+	Remove ObjectRemovalAction = "remove"
 )
 
 // Defines values for PostProcessingCropMode.
 const (
 	Environment PostProcessingCropMode = "environment"
+	RigidBody   PostProcessingCropMode = "rigid_body"
 )
 
 // Defines values for ReconstructionMatchingMethod.
@@ -57,23 +63,34 @@ const (
 	Sequential ReconstructionMatchingMethod = "sequential"
 	Spatial    ReconstructionMatchingMethod = "spatial"
 	Transitive ReconstructionMatchingMethod = "transitive"
+	Vocab      ReconstructionMatchingMethod = "vocab"
 	VocabTree  ReconstructionMatchingMethod = "vocab_tree"
 )
 
 // Defines values for ReconstructionSoftwareName.
 const (
-	Colmap ReconstructionSoftwareName = "colmap"
-	Glomap ReconstructionSoftwareName = "glomap"
+	Colmap      ReconstructionSoftwareName = "colmap"
+	Glomap      ReconstructionSoftwareName = "glomap"
+	Hloc        ReconstructionSoftwareName = "hloc"
+	MapAnything ReconstructionSoftwareName = "map_anything"
 )
 
 // Defines values for Training3DIsp.
 const (
-	None Training3DIsp = "none"
+	Bilagrid Training3DIsp = "bilagrid"
+	None     Training3DIsp = "none"
+	Ppisp    Training3DIsp = "ppisp"
 )
 
 // Defines values for TrainingModel.
 const (
-	Splatfacto TrainingModel = "splatfacto"
+	N3dgrt           TrainingModel = "3dgrt"
+	N3dgut           TrainingModel = "3dgut"
+	Nerfacto         TrainingModel = "nerfacto"
+	Splatfacto       TrainingModel = "splatfacto"
+	SplatfactoBig    TrainingModel = "splatfacto-big"
+	SplatfactoMcmc   TrainingModel = "splatfacto-mcmc"
+	SplatfactoWLight TrainingModel = "splatfacto-w-light"
 )
 
 // AuthUser defines model for AuthUser.
@@ -170,31 +187,31 @@ type OutputFileRef struct {
 // PipelineSettings defines model for PipelineSettings.
 type PipelineSettings struct {
 	PostProcessing struct {
-		CleanSplat        bool                   `json:"cleanSplat"`
+		CleanSplat        string                 `json:"cleanSplat"`
 		CropMode          PostProcessingCropMode `json:"cropMode"`
-		CropOutputBounds  bool                   `json:"cropOutputBounds"`
-		EnableSog         bool                   `json:"enableSog"`
-		EnableSpz         bool                   `json:"enableSpz"`
-		EnableUsdz        bool                   `json:"enableUsdz"`
-		EnableVideoExport bool                   `json:"enableVideoExport"`
+		CropOutputBounds  string                 `json:"cropOutputBounds"`
+		EnableSog         string                 `json:"enableSog"`
+		EnableSpz         string                 `json:"enableSpz"`
+		EnableUsdz        string                 `json:"enableUsdz"`
+		EnableVideoExport string                 `json:"enableVideoExport"`
 		PlyCoords         CoordinateSystem       `json:"plyCoords"`
 		SogCoords         CoordinateSystem       `json:"sogCoords"`
 		SpzCoords         CoordinateSystem       `json:"spzCoords"`
 		UsdzCoords        CoordinateSystem       `json:"usdzCoords"`
 	} `json:"postProcessing"`
 	Reconstruction struct {
-		Enable                          bool                         `json:"enable"`
-		EnableEnhancedFeatureExtraction bool                         `json:"enableEnhancedFeatureExtraction"`
-		EnableFlHeuristic               bool                         `json:"enableFlHeuristic"`
-		EnableFlMetric                  bool                         `json:"enableFlMetric"`
-		FlHeuristicValue                float32                      `json:"flHeuristicValue"`
-		FlMetricValue                   float32                      `json:"flMetricValue"`
+		Enable                          string                       `json:"enable"`
+		EnableEnhancedFeatureExtraction string                       `json:"enableEnhancedFeatureExtraction"`
+		EnableFlHeuristic               string                       `json:"enableFlHeuristic"`
+		EnableFlMetric                  string                       `json:"enableFlMetric"`
+		FlHeuristicValue                string                       `json:"flHeuristicValue"`
+		FlMetricValue                   string                       `json:"flMetricValue"`
 		MatchingMethod                  ReconstructionMatchingMethod `json:"matchingMethod"`
 		PosePriors                      struct {
-			UsePosePriorColmapModelFiles bool `json:"usePosePriorColmapModelFiles"`
+			UsePosePriorColmapModelFiles string `json:"usePosePriorColmapModelFiles"`
 			UsePosePriorTransformJson    struct {
-				Enable               bool   `json:"enable"`
-				PoseIsWorldToCam     bool   `json:"poseIsWorldToCam"`
+				Enable               string `json:"enable"`
+				PoseIsWorldToCam     string `json:"poseIsWorldToCam"`
 				SourceCoordinateName string `json:"sourceCoordinateName"`
 			} `json:"usePosePriorTransformJson"`
 		} `json:"posePriors"`
@@ -202,36 +219,36 @@ type PipelineSettings struct {
 	} `json:"reconstruction"`
 	Segmentation struct {
 		BackgroundRemoval struct {
-			Enable        bool                   `json:"enable"`
-			MaskThreshold float32                `json:"maskThreshold"`
+			Enable        string                 `json:"enable"`
+			MaskThreshold string                 `json:"maskThreshold"`
 			Model         BackgroundRemovalModel `json:"model"`
 		} `json:"backgroundRemoval"`
 		ObjectRemoval struct {
 			Action  ObjectRemovalAction `json:"action"`
-			Enable  bool                `json:"enable"`
+			Enable  string              `json:"enable"`
 			Objects string              `json:"objects"`
 		} `json:"objectRemoval"`
 	} `json:"segmentation"`
 	SphericalCamera struct {
 		CubeFacesToRemove            string `json:"cubeFacesToRemove"`
-		Enable                       bool   `json:"enable"`
-		OptimizeSequentialFrameOrder bool   `json:"optimizeSequentialFrameOrder"`
+		Enable                       string `json:"enable"`
+		OptimizeSequentialFrameOrder string `json:"optimizeSequentialFrameOrder"`
 	} `json:"sphericalCamera"`
 	Training struct {
 		N3dIsp             Training3DIsp `json:"3dIsp"`
-		Enable             bool          `json:"enable"`
-		EnableDepthLoss    bool          `json:"enableDepthLoss"`
-		MaxSteps           int           `json:"maxSteps"`
+		Enable             string        `json:"enable"`
+		EnableDepthLoss    string        `json:"enableDepthLoss"`
+		MaxSteps           string        `json:"maxSteps"`
 		Model              TrainingModel `json:"model"`
-		PreserveSceneScale bool          `json:"preserveSceneScale"`
+		PreserveSceneScale string        `json:"preserveSceneScale"`
 	} `json:"training"`
 	VideoProcessing struct {
-		FilterBlurryImages bool `json:"filterBlurryImages"`
-		MaxNumImages       int  `json:"maxNumImages"`
-		VideoStartTime     int  `json:"videoStartTime"`
+		FilterBlurryImages string `json:"filterBlurryImages"`
+		MaxNumImages       string `json:"maxNumImages"`
+		VideoStartTime     string `json:"videoStartTime"`
 
 		// VideoStopTime -1 means unset
-		VideoStopTime int `json:"videoStopTime"`
+		VideoStopTime string `json:"videoStopTime"`
 	} `json:"videoProcessing"`
 }
 
