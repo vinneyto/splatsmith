@@ -3,11 +3,9 @@ package httpapi
 import (
 	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	awsruntime "github.com/vinneyto/splatmaker/api/internal/aws"
 	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
@@ -46,12 +44,16 @@ func (s *APIServer) GetJobResultUrls(c *gin.Context, jobID string, params GetJob
 }
 
 func (s *APIServer) authenticate(c *gin.Context) (core.UserIdentity, bool) {
-	ctx := c.Request.Context(); authHeader := c.GetHeader("Authorization")
-	if s.deps.Mode == "aws" && strings.TrimSpace(authHeader) == "" {
-		ctx = awsruntime.WithALBIdentity(ctx, c.GetHeader("X-Amzn-Oidc-Identity"), c.GetHeader("X-Amzn-Oidc-Data"))
-		authHeader = "Bearer alb"
+	ctx := c.Request.Context()
+	req := core.AuthRequest{
+		AuthorizationHeader: c.GetHeader("Authorization"),
+		OIDCIdentityHeader:  c.GetHeader("X-Amzn-Oidc-Identity"),
+		OIDCDataHeader:      c.GetHeader("X-Amzn-Oidc-Data"),
 	}
-	identity, err := s.deps.AuthService.Authenticate(ctx, authHeader)
+	if s.deps.AuthRequestAdapter != nil {
+		ctx, req = s.deps.AuthRequestAdapter.Adapt(ctx, req)
+	}
+	identity, err := s.deps.AuthService.Authenticate(ctx, req.AuthorizationHeader)
 	if err != nil { s.writeDomainError(c, err); return core.UserIdentity{}, false }
 	return identity, true
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/vinneyto/splatmaker/api/internal/aws"
+	"github.com/vinneyto/splatmaker/api/internal/core"
 	"github.com/vinneyto/splatmaker/api/internal/core/services"
 	"github.com/vinneyto/splatmaker/api/internal/standalone"
 )
@@ -11,6 +12,7 @@ import (
 type Runtime struct {
 	Mode                    Mode
 	AuthService             *services.AuthService
+	AuthRequestAdapter      core.AuthRequestAdapter
 	JobService              *services.JobService
 	ResultURLTTL            int
 	Close                   func() error
@@ -28,11 +30,12 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 			ttl = 900
 		}
 		return &Runtime{
-			Mode:         cfg.Mode,
-			AuthService:  services.NewAuthService(module.AuthProvider),
-			JobService:   services.NewJobService(module.JobRepository, module.ResultURLResolver),
-			ResultURLTTL: ttl,
-			Close:        module.Close,
+			Mode:               cfg.Mode,
+			AuthService:        services.NewAuthService(module.AuthProvider),
+			AuthRequestAdapter: module.AuthRequestAdapter,
+			JobService:         services.NewJobService(module.JobRepository, module.ResultURLResolver),
+			ResultURLTTL:       ttl,
+			Close:              module.Close,
 		}, nil
 	case ModeAWS:
 		module, err := aws.NewModule(cfg.AWS)
@@ -40,10 +43,11 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 			return nil, err
 		}
 		return &Runtime{
-			Mode:         cfg.Mode,
-			AuthService:  services.NewAuthService(module.AuthProvider),
-			JobService:   services.NewJobService(module.JobRepository, module.ResultURLResolver),
-			ResultURLTTL: 900,
+			Mode:               cfg.Mode,
+			AuthService:        services.NewAuthService(module.AuthProvider),
+			AuthRequestAdapter: module.AuthRequestAdapter,
+			JobService:         services.NewJobService(module.JobRepository, module.ResultURLResolver),
+			ResultURLTTL:       900,
 			Close: func() error {
 				_ = module
 				return nil

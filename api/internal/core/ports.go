@@ -5,12 +5,18 @@ import (
 	"time"
 )
 
+type AuthRequest struct {
+	AuthorizationHeader string
+	OIDCIdentityHeader  string
+	OIDCDataHeader      string
+}
+
 type AuthProvider interface {
 	ValidateToken(ctx context.Context, token string) (AuthClaims, error)
 }
 
-type LoginProvider interface {
-	LoginWithPassword(ctx context.Context, username, password string) (LoginResult, error)
+type AuthRequestAdapter interface {
+	Adapt(ctx context.Context, req AuthRequest) (context.Context, AuthRequest)
 }
 
 type JobRepository interface {
