@@ -38,7 +38,6 @@ export interface JobResultURL {
 }
 
 // kept for compatibility with legacy settings UI; viewer mode does not use it.
-export type PipelineSettings = Record<string, unknown>;
 
 const getToken = (): string | null => {
   if (typeof window === 'undefined') return null;
