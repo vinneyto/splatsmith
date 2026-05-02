@@ -13,7 +13,6 @@ import (
 type Dependencies struct {
 	Mode                string
 	AuthService         *services.AuthService
-	LoginService        *services.LoginService
 	JobService          *services.JobService
 	DefaultResultURLTTL time.Duration
 }

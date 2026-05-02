@@ -19,17 +19,6 @@ func NewAPIServer(deps Dependencies) *APIServer { return &APIServer{deps: deps} 
 
 func (s *APIServer) Healthz(c *gin.Context) { c.JSON(http.StatusOK, HealthResponse{Status: "ok"}) }
 
-func (s *APIServer) Login(c *gin.Context) {
-	var req LoginJSONRequestBody
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid json body"})
-		return
-	}
-	res, err := s.deps.LoginService.LoginWithPassword(c.Request.Context(), req.Username, req.Password)
-	if err != nil { s.writeDomainError(c, err); return }
-	c.JSON(http.StatusOK, LoginResponse{AccessToken: res.Token, TokenType: "Bearer", ExpiresIn: 86400})
-}
-
 func (s *APIServer) ListJobs(c *gin.Context, params ListJobsParams) {
 	identity, ok := s.authenticate(c); if !ok { return }
 	filter := core.JobListFilter{UserID: identity.UserID, Limit: fromIntPtr(params.Limit), Offset: fromIntPtr(params.Offset), Status: toCoreStatusPtr(params.Status)}

@@ -76,19 +76,6 @@ type ListJobsResponse struct {
 	Items []JobSummary `json:"items"`
 }
 
-// LoginRequest defines model for LoginRequest.
-type LoginRequest struct {
-	Password string `json:"password"`
-	Username string `json:"username"`
-}
-
-// LoginResponse defines model for LoginResponse.
-type LoginResponse struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int    `json:"expires_in"`
-	TokenType   string `json:"token_type"`
-}
-
 // OutputFileRef defines model for OutputFileRef.
 type OutputFileRef struct {
 	FileName  string `json:"file_name"`
@@ -108,17 +95,11 @@ type GetJobResultUrlsParams struct {
 	TtlSeconds *int `form:"ttl_seconds,omitempty" json:"ttl_seconds,omitempty"`
 }
 
-// LoginJSONRequestBody defines body for Login for application/json ContentType.
-type LoginJSONRequestBody = LoginRequest
-
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (GET /healthz)
 	Healthz(c *gin.Context)
-
-	// (POST /v1/auth/login)
-	Login(c *gin.Context)
 
 	// (GET /v1/jobs)
 	ListJobs(c *gin.Context, params ListJobsParams)
@@ -150,19 +131,6 @@ func (siw *ServerInterfaceWrapper) Healthz(c *gin.Context) {
 	}
 
 	siw.Handler.Healthz(c)
-}
-
-// Login operation middleware
-func (siw *ServerInterfaceWrapper) Login(c *gin.Context) {
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.Login(c)
 }
 
 // ListJobs operation middleware
@@ -294,7 +262,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/healthz", wrapper.Healthz)
-	router.POST(options.BaseURL+"/v1/auth/login", wrapper.Login)
 	router.GET(options.BaseURL+"/v1/jobs", wrapper.ListJobs)
 	router.GET(options.BaseURL+"/v1/jobs/:job_id", wrapper.GetJob)
 	router.GET(options.BaseURL+"/v1/jobs/:job_id/result-urls", wrapper.GetJobResultUrls)

@@ -15,22 +15,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
-  /v1/auth/login:
-    post:
-      operationId: login
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: login success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoginResponse'
+
   /v1/jobs:
     get:
       operationId: listJobs
@@ -109,19 +94,7 @@ components:
       properties:
         error:
           type: string
-    LoginRequest:
-      type: object
-      required: [username, password]
-      properties:
-        username: { type: string }
-        password: { type: string }
-    LoginResponse:
-      type: object
-      required: [access_token, token_type, expires_in]
-      properties:
-        access_token: { type: string }
-        token_type: { type: string }
-        expires_in: { type: integer }
+
     JobStatus:
       type: string
       enum: [queued, running, succeeded, failed, canceled]
