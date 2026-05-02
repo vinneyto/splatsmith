@@ -4,6 +4,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 
 export class ViewerServerlessStack extends cdk.Stack {
@@ -18,12 +19,16 @@ export class ViewerServerlessStack extends cdk.Stack {
     const resultBucket = s3.Bucket.fromBucketName(this, 'ResultBucket', resultBucketName.valueAsString);
     const frontendBucket = s3.Bucket.fromBucketName(this, 'FrontendBucket', frontendBucketName.valueAsString);
 
-    const jobsApi = new lambda.Function(this, 'ViewerJobsApiFn', {
+    const jobsApi = new lambdaNodejs.NodejsFunction(this, 'ViewerJobsApiFn', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset('lambda/jobs-api'),
+      entry: 'lambda/jobs-api/index.ts',
+      handler: 'handler',
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
+      bundling: {
+        target: 'node20',
+        format: lambdaNodejs.OutputFormat.ESM,
+      },
       environment: {
         JOBS_TABLE_NAME: jobsTableName.valueAsString,
       },

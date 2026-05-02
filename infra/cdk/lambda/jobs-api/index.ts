@@ -1,12 +1,23 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 
+type Query = Record<string, string | undefined>;
+type JsonBody = Record<string, unknown>;
+
+type LambdaEvent = {
+  requestContext?: { http?: { method?: string } };
+  httpMethod?: string;
+  rawPath?: string;
+  path?: string;
+  queryStringParameters?: Query;
+};
+
 const tableName = process.env.JOBS_TABLE_NAME;
 const resultsBaseUrl = (process.env.RESULTS_BASE_URL || '').replace(/\/$/, '');
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
-const STATUS_MAP = new Map([
+const STATUS_MAP = new Map<string, string>([
   ['done', 'succeeded'],
   ['completed', 'succeeded'],
   ['success', 'succeeded'],
@@ -23,7 +34,7 @@ const STATUS_MAP = new Map([
   ['pending', 'queued'],
 ]);
 
-function json(statusCode, body) {
+function json(statusCode: number, body: JsonBody) {
   return {
     statusCode,
     headers: {
@@ -35,19 +46,19 @@ function json(statusCode, body) {
   };
 }
 
-function normalizeStatus(raw) {
+function normalizeStatus(raw: unknown) {
   const key = String(raw || '').trim().toLowerCase();
   return STATUS_MAP.get(key) || 'queued';
 }
 
-function inferProgress(status) {
+function inferProgress(status: string) {
   if (status === 'succeeded') return 100;
   if (status === 'running') return 50;
   if (status === 'queued') return 10;
   return 0;
 }
 
-function parseTime(raw) {
+function parseTime(raw: unknown) {
   const s = String(raw || '').trim();
   if (!s) return null;
 
@@ -61,7 +72,7 @@ function parseTime(raw) {
   return null;
 }
 
-function inferOutputFiles(row) {
+function inferOutputFiles(row: Record<string, unknown>) {
   const prefix = String(row?.s3Output || '').trim();
   if (!prefix) return [];
 
@@ -82,7 +93,7 @@ function inferOutputFiles(row) {
   ];
 }
 
-function toSummary(row) {
+function toSummary(row: Record<string, unknown>) {
   const status = normalizeStatus(row?.uuidStatus);
   const updatedAt = parseTime(row?.updatedAt) || parseTime(row?.endTimestamp) || parseTime(row?.startTimestamp) || new Date().toISOString();
   const createdAt = parseTime(row?.startTimestamp) || updatedAt;
@@ -96,7 +107,7 @@ function toSummary(row) {
   };
 }
 
-function toDetails(row) {
+function toDetails(row: Record<string, unknown>) {
   const summary = toSummary(row);
   const outputFiles = inferOutputFiles(row);
 
@@ -111,7 +122,7 @@ function toDetails(row) {
   };
 }
 
-function toResultUrls(details, ttlSeconds) {
+function toResultUrls(details: ReturnType<typeof toDetails>, ttlSeconds: number) {
   const ttl = Math.max(60, Math.min(86400, ttlSeconds || 3600));
   const expiresAt = new Date(Date.now() + ttl * 1000).toISOString();
 
@@ -125,13 +136,13 @@ function toResultUrls(details, ttlSeconds) {
   };
 }
 
-async function listJobs(query) {
+async function listJobs(query: Query) {
   const limit = Math.max(1, Math.min(200, Number(query?.limit || 100)));
   const offset = Math.max(0, Number(query?.offset || 0));
   const statusFilter = query?.status ? String(query.status).trim().toLowerCase() : '';
 
   const out = await ddb.send(new ScanCommand({ TableName: tableName }));
-  let items = (out.Items || []).map(toSummary);
+  let items = (out.Items || []).map((x) => toSummary(x as Record<string, unknown>));
 
   if (statusFilter) {
     items = items.filter((x) => x.status === statusFilter);
@@ -141,7 +152,7 @@ async function listJobs(query) {
   return { items: items.slice(offset, offset + limit) };
 }
 
-async function getJob(jobId) {
+async function getJob(jobId: string) {
   const out = await ddb.send(new GetCommand({
     TableName: tableName,
     Key: { uuid: jobId },
@@ -151,10 +162,10 @@ async function getJob(jobId) {
     return null;
   }
 
-  return toDetails(out.Item);
+  return toDetails(out.Item as Record<string, unknown>);
 }
 
-export async function handler(event) {
+export async function handler(event: LambdaEvent) {
   try {
     if (!tableName) {
       return json(500, { error: 'JOBS_TABLE_NAME is not set' });
