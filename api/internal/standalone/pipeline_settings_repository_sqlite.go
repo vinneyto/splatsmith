@@ -135,6 +135,9 @@ func (r *SQLitePipelineSettingsRepository) Create(ctx context.Context, input cor
 	if input.UserID == "" || !isValidPipelineRecordType(input.RecordType) {
 		return nil, core.ErrInvalidArgument
 	}
+	if err := input.Settings.Validate(); err != nil {
+		return nil, core.ErrInvalidArgument
+	}
 	settingsJSON, err := json.Marshal(input.Settings)
 	if err != nil {
 		return nil, err
@@ -178,6 +181,9 @@ func (r *SQLitePipelineSettingsRepository) Update(ctx context.Context, input cor
 	}
 	settings := current.Settings
 	if input.Settings != nil {
+		if err := input.Settings.Validate(); err != nil {
+			return nil, core.ErrInvalidArgument
+		}
 		settings = *input.Settings
 	}
 	settingsJSON, err := json.Marshal(settings)

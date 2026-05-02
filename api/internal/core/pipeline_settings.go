@@ -1,6 +1,75 @@
 package core
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+type ReconstructionSoftwareName string
+
+const (
+	ReconstructionSoftwareNameGlomap ReconstructionSoftwareName = "glomap"
+	ReconstructionSoftwareNameColmap ReconstructionSoftwareName = "colmap"
+)
+
+func (v ReconstructionSoftwareName) IsValid() bool {
+	switch v {
+	case ReconstructionSoftwareNameGlomap, ReconstructionSoftwareNameColmap:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *ReconstructionSoftwareName) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	parsed := ReconstructionSoftwareName(raw)
+	if !parsed.IsValid() {
+		return fmt.Errorf("invalid reconstruction.softwareName: %q", raw)
+	}
+	*v = parsed
+	return nil
+}
+
+type ReconstructionMatchingMethod string
+
+const (
+	ReconstructionMatchingMethodSequential ReconstructionMatchingMethod = "sequential"
+	ReconstructionMatchingMethodExhaustive ReconstructionMatchingMethod = "exhaustive"
+	ReconstructionMatchingMethodSpatial    ReconstructionMatchingMethod = "spatial"
+	ReconstructionMatchingMethodVocabTree  ReconstructionMatchingMethod = "vocab_tree"
+	ReconstructionMatchingMethodTransitive ReconstructionMatchingMethod = "transitive"
+)
+
+func (v ReconstructionMatchingMethod) IsValid() bool {
+	switch v {
+	case ReconstructionMatchingMethodSequential,
+		ReconstructionMatchingMethodExhaustive,
+		ReconstructionMatchingMethodSpatial,
+		ReconstructionMatchingMethodVocabTree,
+		ReconstructionMatchingMethodTransitive:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *ReconstructionMatchingMethod) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	parsed := ReconstructionMatchingMethod(raw)
+	if !parsed.IsValid() {
+		return fmt.Errorf("invalid reconstruction.matchingMethod: %q", raw)
+	}
+	*v = parsed
+	return nil
+}
 
 type PipelineSettingsRecordType string
 
@@ -19,22 +88,22 @@ type PipelineSettings struct {
 }
 
 type VideoProcessingSettings struct {
-	MaxNumImages       int    `json:"maxNumImages"`
-	VideoStartTime     int    `json:"videoStartTime"`
-	VideoStopTime      int    `json:"videoStopTime"`
-	FilterBlurryImages bool   `json:"filterBlurryImages"`
+	MaxNumImages       int  `json:"maxNumImages"`
+	VideoStartTime     int  `json:"videoStartTime"`
+	VideoStopTime      int  `json:"videoStopTime"`
+	FilterBlurryImages bool `json:"filterBlurryImages"`
 }
 
 type ReconstructionSettings struct {
-	Enable                          bool               `json:"enable"`
-	SoftwareName                    string             `json:"softwareName"`
-	EnableEnhancedFeatureExtraction bool               `json:"enableEnhancedFeatureExtraction"`
-	MatchingMethod                  string             `json:"matchingMethod"`
-	EnableFlHeuristic               bool               `json:"enableFlHeuristic"`
-	FlHeuristicValue                float64            `json:"flHeuristicValue"`
-	EnableFlMetric                  bool               `json:"enableFlMetric"`
-	FlMetricValue                   float64            `json:"flMetricValue"`
-	PosePriors                      PosePriorsSettings `json:"posePriors"`
+	Enable                          bool                         `json:"enable"`
+	SoftwareName                    ReconstructionSoftwareName   `json:"softwareName"`
+	EnableEnhancedFeatureExtraction bool                         `json:"enableEnhancedFeatureExtraction"`
+	MatchingMethod                  ReconstructionMatchingMethod `json:"matchingMethod"`
+	EnableFlHeuristic               bool                         `json:"enableFlHeuristic"`
+	FlHeuristicValue                float64                      `json:"flHeuristicValue"`
+	EnableFlMetric                  bool                         `json:"enableFlMetric"`
+	FlMetricValue                   float64                      `json:"flMetricValue"`
+	PosePriors                      PosePriorsSettings           `json:"posePriors"`
 }
 
 type PosePriorsSettings struct {
@@ -83,8 +152,8 @@ type SegmentationSettings struct {
 }
 
 type BackgroundRemovalSettings struct {
-	Enable        bool   `json:"enable"`
-	Model         string `json:"model"`
+	Enable        bool    `json:"enable"`
+	Model         string  `json:"model"`
 	MaskThreshold float64 `json:"maskThreshold"`
 }
 
@@ -104,9 +173,9 @@ func NewDefaultPipelineSettings() PipelineSettings {
 		},
 		Reconstruction: ReconstructionSettings{
 			Enable:                          true,
-			SoftwareName:                    "glomap",
+			SoftwareName:                    ReconstructionSoftwareNameGlomap,
 			EnableEnhancedFeatureExtraction: false,
-			MatchingMethod:                  "sequential",
+			MatchingMethod:                  ReconstructionMatchingMethodSequential,
 			EnableFlHeuristic:               false,
 			FlHeuristicValue:                1.2,
 			EnableFlMetric:                  false,
@@ -191,4 +260,14 @@ type UpdatePipelineSettingsInput struct {
 	UserID   string
 	Name     *string
 	Settings *PipelineSettings
+}
+
+func (s PipelineSettings) Validate() error {
+	if !s.Reconstruction.SoftwareName.IsValid() {
+		return fmt.Errorf("invalid reconstruction.softwareName: %q", s.Reconstruction.SoftwareName)
+	}
+	if !s.Reconstruction.MatchingMethod.IsValid() {
+		return fmt.Errorf("invalid reconstruction.matchingMethod: %q", s.Reconstruction.MatchingMethod)
+	}
+	return nil
 }
