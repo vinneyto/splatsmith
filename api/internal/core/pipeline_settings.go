@@ -71,6 +71,174 @@ func (v *ReconstructionMatchingMethod) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type TrainingModel string
+
+const (
+	TrainingModelSplatfacto TrainingModel = "splatfacto"
+)
+
+func (v TrainingModel) IsValid() bool {
+	switch v {
+	case TrainingModelSplatfacto:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *TrainingModel) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	parsed := TrainingModel(raw)
+	if !parsed.IsValid() {
+		return fmt.Errorf("invalid training.model: %q", raw)
+	}
+	*v = parsed
+	return nil
+}
+
+type TrainingThreeDIsp string
+
+const (
+	TrainingThreeDIspNone TrainingThreeDIsp = "none"
+)
+
+func (v TrainingThreeDIsp) IsValid() bool {
+	switch v {
+	case TrainingThreeDIspNone:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *TrainingThreeDIsp) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	parsed := TrainingThreeDIsp(raw)
+	if !parsed.IsValid() {
+		return fmt.Errorf("invalid training.3dIsp: %q", raw)
+	}
+	*v = parsed
+	return nil
+}
+
+type PostProcessingCropMode string
+
+const (
+	PostProcessingCropModeEnvironment PostProcessingCropMode = "environment"
+)
+
+func (v PostProcessingCropMode) IsValid() bool {
+	switch v {
+	case PostProcessingCropModeEnvironment:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *PostProcessingCropMode) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	parsed := PostProcessingCropMode(raw)
+	if !parsed.IsValid() {
+		return fmt.Errorf("invalid postProcessing.cropMode: %q", raw)
+	}
+	*v = parsed
+	return nil
+}
+
+type CoordinateSystem string
+
+const (
+	CoordinateSystemRhyu CoordinateSystem = "rhyu"
+)
+
+func (v CoordinateSystem) IsValid() bool {
+	switch v {
+	case CoordinateSystemRhyu:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *CoordinateSystem) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	parsed := CoordinateSystem(raw)
+	if !parsed.IsValid() {
+		return fmt.Errorf("invalid coordinate system: %q", raw)
+	}
+	*v = parsed
+	return nil
+}
+
+type BackgroundRemovalModel string
+
+const (
+	BackgroundRemovalModelU2Net BackgroundRemovalModel = "u2net"
+)
+
+func (v BackgroundRemovalModel) IsValid() bool {
+	switch v {
+	case BackgroundRemovalModelU2Net:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *BackgroundRemovalModel) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	parsed := BackgroundRemovalModel(raw)
+	if !parsed.IsValid() {
+		return fmt.Errorf("invalid segmentation.backgroundRemoval.model: %q", raw)
+	}
+	*v = parsed
+	return nil
+}
+
+type ObjectRemovalAction string
+
+const (
+	ObjectRemovalActionErase ObjectRemovalAction = "erase"
+)
+
+func (v ObjectRemovalAction) IsValid() bool {
+	switch v {
+	case ObjectRemovalActionErase:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *ObjectRemovalAction) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	parsed := ObjectRemovalAction(raw)
+	if !parsed.IsValid() {
+		return fmt.Errorf("invalid segmentation.objectRemoval.action: %q", raw)
+	}
+	*v = parsed
+	return nil
+}
+
 type PipelineSettingsRecordType string
 
 const (
@@ -118,26 +286,26 @@ type PosePriorTransformJSONSettings struct {
 }
 
 type TrainingSettings struct {
-	Enable             bool   `json:"enable"`
-	MaxSteps           int    `json:"maxSteps"`
-	Model              string `json:"model"`
-	ThreeDIsp          string `json:"3dIsp"`
-	PreserveSceneScale bool   `json:"preserveSceneScale"`
-	EnableDepthLoss    bool   `json:"enableDepthLoss"`
+	Enable             bool              `json:"enable"`
+	MaxSteps           int               `json:"maxSteps"`
+	Model              TrainingModel     `json:"model"`
+	ThreeDIsp          TrainingThreeDIsp `json:"3dIsp"`
+	PreserveSceneScale bool              `json:"preserveSceneScale"`
+	EnableDepthLoss    bool              `json:"enableDepthLoss"`
 }
 
 type PostProcessingSettings struct {
-	CropOutputBounds  bool   `json:"cropOutputBounds"`
-	CropMode          string `json:"cropMode"`
-	CleanSplat        bool   `json:"cleanSplat"`
-	EnableSpz         bool   `json:"enableSpz"`
-	EnableSog         bool   `json:"enableSog"`
-	EnableUsdz        bool   `json:"enableUsdz"`
-	EnableVideoExport bool   `json:"enableVideoExport"`
-	PlyCoords         string `json:"plyCoords"`
-	SpzCoords         string `json:"spzCoords"`
-	SogCoords         string `json:"sogCoords"`
-	UsdzCoords        string `json:"usdzCoords"`
+	CropOutputBounds  bool                   `json:"cropOutputBounds"`
+	CropMode          PostProcessingCropMode `json:"cropMode"`
+	CleanSplat        bool                   `json:"cleanSplat"`
+	EnableSpz         bool                   `json:"enableSpz"`
+	EnableSog         bool                   `json:"enableSog"`
+	EnableUsdz        bool                   `json:"enableUsdz"`
+	EnableVideoExport bool                   `json:"enableVideoExport"`
+	PlyCoords         CoordinateSystem       `json:"plyCoords"`
+	SpzCoords         CoordinateSystem       `json:"spzCoords"`
+	SogCoords         CoordinateSystem       `json:"sogCoords"`
+	UsdzCoords        CoordinateSystem       `json:"usdzCoords"`
 }
 
 type SphericalCameraSettings struct {
@@ -152,15 +320,15 @@ type SegmentationSettings struct {
 }
 
 type BackgroundRemovalSettings struct {
-	Enable        bool    `json:"enable"`
-	Model         string  `json:"model"`
-	MaskThreshold float64 `json:"maskThreshold"`
+	Enable        bool                   `json:"enable"`
+	Model         BackgroundRemovalModel `json:"model"`
+	MaskThreshold float64                `json:"maskThreshold"`
 }
 
 type ObjectRemovalSettings struct {
-	Enable  bool   `json:"enable"`
-	Action  string `json:"action"`
-	Objects string `json:"objects"`
+	Enable  bool                `json:"enable"`
+	Action  ObjectRemovalAction `json:"action"`
+	Objects string              `json:"objects"`
 }
 
 func NewDefaultPipelineSettings() PipelineSettings {
@@ -192,23 +360,23 @@ func NewDefaultPipelineSettings() PipelineSettings {
 		Training: TrainingSettings{
 			Enable:             true,
 			MaxSteps:           15000,
-			Model:              "splatfacto",
-			ThreeDIsp:          "none",
+			Model:              TrainingModelSplatfacto,
+			ThreeDIsp:          TrainingThreeDIspNone,
 			PreserveSceneScale: false,
 			EnableDepthLoss:    false,
 		},
 		PostProcessing: PostProcessingSettings{
 			CropOutputBounds:  false,
-			CropMode:          "environment",
+			CropMode:          PostProcessingCropModeEnvironment,
 			CleanSplat:        false,
 			EnableSpz:         true,
 			EnableSog:         true,
 			EnableUsdz:        true,
 			EnableVideoExport: true,
-			PlyCoords:         "rhyu",
-			SpzCoords:         "rhyu",
-			SogCoords:         "rhyu",
-			UsdzCoords:        "rhyu",
+			PlyCoords:         CoordinateSystemRhyu,
+			SpzCoords:         CoordinateSystemRhyu,
+			SogCoords:         CoordinateSystemRhyu,
+			UsdzCoords:        CoordinateSystemRhyu,
 		},
 		SphericalCamera: SphericalCameraSettings{
 			Enable:                       false,
@@ -218,12 +386,12 @@ func NewDefaultPipelineSettings() PipelineSettings {
 		Segmentation: SegmentationSettings{
 			BackgroundRemoval: BackgroundRemovalSettings{
 				Enable:        false,
-				Model:         "u2net",
+				Model:         BackgroundRemovalModelU2Net,
 				MaskThreshold: 0.6,
 			},
 			ObjectRemoval: ObjectRemovalSettings{
 				Enable:  false,
-				Action:  "erase",
+				Action:  ObjectRemovalActionErase,
 				Objects: "['human']",
 			},
 		},
@@ -268,6 +436,24 @@ func (s PipelineSettings) Validate() error {
 	}
 	if !s.Reconstruction.MatchingMethod.IsValid() {
 		return fmt.Errorf("invalid reconstruction.matchingMethod: %q", s.Reconstruction.MatchingMethod)
+	}
+	if !s.Training.Model.IsValid() {
+		return fmt.Errorf("invalid training.model: %q", s.Training.Model)
+	}
+	if !s.Training.ThreeDIsp.IsValid() {
+		return fmt.Errorf("invalid training.3dIsp: %q", s.Training.ThreeDIsp)
+	}
+	if !s.PostProcessing.CropMode.IsValid() {
+		return fmt.Errorf("invalid postProcessing.cropMode: %q", s.PostProcessing.CropMode)
+	}
+	if !s.PostProcessing.PlyCoords.IsValid() || !s.PostProcessing.SpzCoords.IsValid() || !s.PostProcessing.SogCoords.IsValid() || !s.PostProcessing.UsdzCoords.IsValid() {
+		return fmt.Errorf("invalid postProcessing.*Coords value")
+	}
+	if !s.Segmentation.BackgroundRemoval.Model.IsValid() {
+		return fmt.Errorf("invalid segmentation.backgroundRemoval.model: %q", s.Segmentation.BackgroundRemoval.Model)
+	}
+	if !s.Segmentation.ObjectRemoval.Action.IsValid() {
+		return fmt.Errorf("invalid segmentation.objectRemoval.action: %q", s.Segmentation.ObjectRemoval.Action)
 	}
 	return nil
 }
