@@ -30,7 +30,7 @@ export class ViewerStack extends cdk.Stack {
       generateSecret: true,
       oAuth: { flows: { authorizationCodeGrant: true }, scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL] },
     });
-    const domainPrefix = `splatmaker-viewer-${this.account?.slice(-6) ?? 'acct'}`;
+    const domainPrefix = 'splatmaker-viewer-auth';
     const userPoolDomain = new cognito.UserPoolDomain(this, 'ViewerUserPoolDomain', {
       userPool,
       cognitoDomain: { domainPrefix },

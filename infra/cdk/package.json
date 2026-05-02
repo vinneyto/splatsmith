@@ -6,6 +6,8 @@
     "synth": "cdk synth"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.908.0",
+    "@aws-sdk/lib-dynamodb": "^3.908.0",
     "aws-cdk-lib": "^2.200.0",
     "constructs": "^10.4.2"
   },
