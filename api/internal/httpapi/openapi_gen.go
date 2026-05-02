@@ -12,98 +12,14 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
-const (
-	BearerAuthScopes = "bearerAuth.Scopes"
-)
-
-// Defines values for BackgroundRemovalModel.
-const (
-	Sam2  BackgroundRemovalModel = "sam2"
-	U2net BackgroundRemovalModel = "u2net"
-)
-
-// Defines values for CoordinateSystem.
-const (
-	Lhyu CoordinateSystem = "lhyu"
-	Lhzu CoordinateSystem = "lhzu"
-	Rhyu CoordinateSystem = "rhyu"
-	Rhzu CoordinateSystem = "rhzu"
-)
-
 // Defines values for JobStatus.
 const (
-	Cancelled  JobStatus = "cancelled"
-	Done       JobStatus = "done"
-	Failed     JobStatus = "failed"
-	InProgress JobStatus = "in_progress"
-	New        JobStatus = "new"
-	Queued     JobStatus = "queued"
+	Canceled  JobStatus = "canceled"
+	Failed    JobStatus = "failed"
+	Queued    JobStatus = "queued"
+	Running   JobStatus = "running"
+	Succeeded JobStatus = "succeeded"
 )
-
-// Defines values for LoginResponseTokenType.
-const (
-	Bearer LoginResponseTokenType = "Bearer"
-)
-
-// Defines values for ObjectRemovalAction.
-const (
-	Erase  ObjectRemovalAction = "erase"
-	Remove ObjectRemovalAction = "remove"
-)
-
-// Defines values for PostProcessingCropMode.
-const (
-	Environment PostProcessingCropMode = "environment"
-	RigidBody   PostProcessingCropMode = "rigid_body"
-)
-
-// Defines values for ReconstructionMatchingMethod.
-const (
-	Exhaustive ReconstructionMatchingMethod = "exhaustive"
-	Sequential ReconstructionMatchingMethod = "sequential"
-	Spatial    ReconstructionMatchingMethod = "spatial"
-	Transitive ReconstructionMatchingMethod = "transitive"
-	Vocab      ReconstructionMatchingMethod = "vocab"
-	VocabTree  ReconstructionMatchingMethod = "vocab_tree"
-)
-
-// Defines values for ReconstructionSoftwareName.
-const (
-	Colmap      ReconstructionSoftwareName = "colmap"
-	Glomap      ReconstructionSoftwareName = "glomap"
-	Hloc        ReconstructionSoftwareName = "hloc"
-	MapAnything ReconstructionSoftwareName = "map_anything"
-)
-
-// Defines values for Training3DIsp.
-const (
-	Bilagrid Training3DIsp = "bilagrid"
-	None     Training3DIsp = "none"
-	Ppisp    Training3DIsp = "ppisp"
-)
-
-// Defines values for TrainingModel.
-const (
-	N3dgrt           TrainingModel = "3dgrt"
-	N3dgut           TrainingModel = "3dgut"
-	Nerfacto         TrainingModel = "nerfacto"
-	Splatfacto       TrainingModel = "splatfacto"
-	SplatfactoBig    TrainingModel = "splatfacto-big"
-	SplatfactoMcmc   TrainingModel = "splatfacto-mcmc"
-	SplatfactoWLight TrainingModel = "splatfacto-w-light"
-)
-
-// AuthUser defines model for AuthUser.
-type AuthUser struct {
-	Email  string `json:"email"`
-	UserId string `json:"user_id"`
-}
-
-// BackgroundRemovalModel defines model for BackgroundRemovalModel.
-type BackgroundRemovalModel string
-
-// CoordinateSystem defines model for CoordinateSystem.
-type CoordinateSystem string
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
@@ -112,31 +28,33 @@ type ErrorResponse struct {
 
 // HealthResponse defines model for HealthResponse.
 type HealthResponse struct {
-	Mode   string `json:"mode"`
 	Status string `json:"status"`
 }
 
 // JobDetails defines model for JobDetails.
 type JobDetails struct {
 	Attempt         int             `json:"attempt"`
-	ErrorMessage    *string         `json:"error_message"`
-	FinishedAt      *time.Time      `json:"finished_at"`
-	LastHeartbeatAt *time.Time      `json:"last_heartbeat_at"`
+	ErrorMessage    *string         `json:"error_message,omitempty"`
+	FinishedAt      *time.Time      `json:"finished_at,omitempty"`
+	LastHeartbeatAt *time.Time      `json:"last_heartbeat_at,omitempty"`
 	OutputFiles     []OutputFileRef `json:"output_files"`
-	SimulateFailure bool            `json:"simulate_failure"`
-	SourceRef       *string         `json:"source_ref"`
-	StartedAt       *time.Time      `json:"started_at"`
+	SimulateFailure *bool           `json:"simulate_failure,omitempty"`
+	SourceRef       string          `json:"source_ref"`
+	StartedAt       *time.Time      `json:"started_at,omitempty"`
 	Summary         JobSummary      `json:"summary"`
 }
 
-// JobMutationResponse defines model for JobMutationResponse.
-type JobMutationResponse struct {
-	Job JobDetails `json:"job"`
+// JobResultURL defines model for JobResultURL.
+type JobResultURL struct {
+	ExpiresAt time.Time `json:"expires_at"`
+	FileName  string    `json:"file_name"`
+	Key       string    `json:"key"`
+	Url       string    `json:"url"`
 }
 
 // JobResultURLsResponse defines model for JobResultURLsResponse.
 type JobResultURLsResponse struct {
-	Items []ResultFileURL `json:"items"`
+	Items []JobResultURL `json:"items"`
 }
 
 // JobStatus defines model for JobStatus.
@@ -145,10 +63,10 @@ type JobStatus string
 // JobSummary defines model for JobSummary.
 type JobSummary struct {
 	CreatedAt       time.Time `json:"created_at"`
-	CurrentStep     *string   `json:"current_step"`
-	IdempotencyKey  *string   `json:"idempotency_key"`
+	CurrentStep     *string   `json:"current_step,omitempty"`
+	IdempotencyKey  *string   `json:"idempotency_key,omitempty"`
 	JobId           string    `json:"job_id"`
-	ProgressPercent int       `json:"progress_percent"`
+	ProgressPercent *int      `json:"progress_percent,omitempty"`
 	Status          JobStatus `json:"status"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
@@ -166,138 +84,23 @@ type LoginRequest struct {
 
 // LoginResponse defines model for LoginResponse.
 type LoginResponse struct {
-	AccessToken string                 `json:"access_token"`
-	TokenType   LoginResponseTokenType `json:"token_type"`
-	User        AuthUser               `json:"user"`
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int    `json:"expires_in"`
+	TokenType   string `json:"token_type"`
 }
-
-// LoginResponseTokenType defines model for LoginResponse.TokenType.
-type LoginResponseTokenType string
-
-// ObjectRemovalAction defines model for ObjectRemovalAction.
-type ObjectRemovalAction string
 
 // OutputFileRef defines model for OutputFileRef.
 type OutputFileRef struct {
 	FileName  string `json:"file_name"`
 	Key       string `json:"key"`
-	SizeBytes *int   `json:"size_bytes"`
+	SizeBytes *int   `json:"size_bytes,omitempty"`
 }
-
-// PipelineSettings defines model for PipelineSettings.
-type PipelineSettings struct {
-	PostProcessing struct {
-		CleanSplat        string                 `json:"cleanSplat"`
-		CropMode          PostProcessingCropMode `json:"cropMode"`
-		CropOutputBounds  string                 `json:"cropOutputBounds"`
-		EnableSog         string                 `json:"enableSog"`
-		EnableSpz         string                 `json:"enableSpz"`
-		EnableUsdz        string                 `json:"enableUsdz"`
-		EnableVideoExport string                 `json:"enableVideoExport"`
-		PlyCoords         CoordinateSystem       `json:"plyCoords"`
-		SogCoords         CoordinateSystem       `json:"sogCoords"`
-		SpzCoords         CoordinateSystem       `json:"spzCoords"`
-		UsdzCoords        CoordinateSystem       `json:"usdzCoords"`
-	} `json:"postProcessing"`
-	Reconstruction struct {
-		Enable                          string                       `json:"enable"`
-		EnableEnhancedFeatureExtraction string                       `json:"enableEnhancedFeatureExtraction"`
-		EnableFlHeuristic               string                       `json:"enableFlHeuristic"`
-		EnableFlMetric                  string                       `json:"enableFlMetric"`
-		FlHeuristicValue                string                       `json:"flHeuristicValue"`
-		FlMetricValue                   string                       `json:"flMetricValue"`
-		MatchingMethod                  ReconstructionMatchingMethod `json:"matchingMethod"`
-		PosePriors                      struct {
-			UsePosePriorColmapModelFiles string `json:"usePosePriorColmapModelFiles"`
-			UsePosePriorTransformJson    struct {
-				Enable               string `json:"enable"`
-				PoseIsWorldToCam     string `json:"poseIsWorldToCam"`
-				SourceCoordinateName string `json:"sourceCoordinateName"`
-			} `json:"usePosePriorTransformJson"`
-		} `json:"posePriors"`
-		SoftwareName ReconstructionSoftwareName `json:"softwareName"`
-	} `json:"reconstruction"`
-	Segmentation struct {
-		BackgroundRemoval struct {
-			Enable        string                 `json:"enable"`
-			MaskThreshold string                 `json:"maskThreshold"`
-			Model         BackgroundRemovalModel `json:"model"`
-		} `json:"backgroundRemoval"`
-		ObjectRemoval struct {
-			Action  ObjectRemovalAction `json:"action"`
-			Enable  string              `json:"enable"`
-			Objects string              `json:"objects"`
-		} `json:"objectRemoval"`
-	} `json:"segmentation"`
-	SphericalCamera struct {
-		CubeFacesToRemove            string `json:"cubeFacesToRemove"`
-		Enable                       string `json:"enable"`
-		OptimizeSequentialFrameOrder string `json:"optimizeSequentialFrameOrder"`
-	} `json:"sphericalCamera"`
-	Training struct {
-		N3dIsp             Training3DIsp `json:"3dIsp"`
-		Enable             string        `json:"enable"`
-		EnableDepthLoss    string        `json:"enableDepthLoss"`
-		MaxSteps           string        `json:"maxSteps"`
-		Model              TrainingModel `json:"model"`
-		PreserveSceneScale string        `json:"preserveSceneScale"`
-	} `json:"training"`
-	VideoProcessing struct {
-		FilterBlurryImages string `json:"filterBlurryImages"`
-		MaxNumImages       string `json:"maxNumImages"`
-		VideoStartTime     string `json:"videoStartTime"`
-
-		// VideoStopTime -1 means unset
-		VideoStopTime string `json:"videoStopTime"`
-	} `json:"videoProcessing"`
-}
-
-// PipelineSettingsResponse defines model for PipelineSettingsResponse.
-type PipelineSettingsResponse struct {
-	Settings PipelineSettings `json:"settings"`
-}
-
-// PostProcessingCropMode defines model for PostProcessingCropMode.
-type PostProcessingCropMode string
-
-// ReconstructionMatchingMethod defines model for ReconstructionMatchingMethod.
-type ReconstructionMatchingMethod string
-
-// ReconstructionSoftwareName defines model for ReconstructionSoftwareName.
-type ReconstructionSoftwareName string
-
-// ResultFileURL defines model for ResultFileURL.
-type ResultFileURL struct {
-	ExpiresAt time.Time `json:"expires_at"`
-	FileName  string    `json:"file_name"`
-	Key       string    `json:"key"`
-	Url       string    `json:"url"`
-}
-
-// SubmitJobRequest defines model for SubmitJobRequest.
-type SubmitJobRequest struct {
-	IdempotencyKey  string  `json:"idempotency_key"`
-	Name            *string `json:"name"`
-	SimulateFailure *bool   `json:"simulate_failure,omitempty"`
-	SourceRef       *string `json:"source_ref"`
-}
-
-// SubmitJobResponse defines model for SubmitJobResponse.
-type SubmitJobResponse struct {
-	Created bool       `json:"created"`
-	Job     JobDetails `json:"job"`
-}
-
-// Training3DIsp defines model for Training3DIsp.
-type Training3DIsp string
-
-// TrainingModel defines model for TrainingModel.
-type TrainingModel string
 
 // ListJobsParams defines parameters for ListJobs.
 type ListJobsParams struct {
-	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
-	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *int       `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int       `form:"offset,omitempty" json:"offset,omitempty"`
+	Status *JobStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // GetJobResultUrlsParams defines parameters for GetJobResultUrls.
@@ -308,44 +111,23 @@ type GetJobResultUrlsParams struct {
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
-// SubmitJobJSONRequestBody defines body for SubmitJob for application/json ContentType.
-type SubmitJobJSONRequestBody = SubmitJobRequest
-
-// PutStandardPipelineSettingsJSONRequestBody defines body for PutStandardPipelineSettings for application/json ContentType.
-type PutStandardPipelineSettingsJSONRequestBody = PipelineSettings
-
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Health check
+
 	// (GET /healthz)
 	Healthz(c *gin.Context)
-	// Username/password login (standalone)
+
 	// (POST /v1/auth/login)
 	Login(c *gin.Context)
-	// List current user jobs
+
 	// (GET /v1/jobs)
 	ListJobs(c *gin.Context, params ListJobsParams)
-	// Submit a reconstruction job asynchronously (idempotent by idempotency_key)
-	// (POST /v1/jobs)
-	SubmitJob(c *gin.Context)
-	// Get details for a single job
+
 	// (GET /v1/jobs/{job_id})
 	GetJob(c *gin.Context, jobId string)
-	// Cancel a queued/running job
-	// (POST /v1/jobs/{job_id}/cancel)
-	CancelJob(c *gin.Context, jobId string)
-	// Resolve result file URLs for a job
+
 	// (GET /v1/jobs/{job_id}/result-urls)
 	GetJobResultUrls(c *gin.Context, jobId string, params GetJobResultUrlsParams)
-	// Retry a failed/cancelled job
-	// (POST /v1/jobs/{job_id}/retry)
-	RetryJob(c *gin.Context, jobId string)
-	// Get standard pipeline settings (falls back to defaults when absent)
-	// (GET /v1/pipeline-settings/standard)
-	GetStandardPipelineSettings(c *gin.Context)
-	// Save standard pipeline settings for current user
-	// (PUT /v1/pipeline-settings/standard)
-	PutStandardPipelineSettings(c *gin.Context)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -388,8 +170,6 @@ func (siw *ServerInterfaceWrapper) ListJobs(c *gin.Context) {
 
 	var err error
 
-	c.Set(BearerAuthScopes, []string{})
-
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListJobsParams
 
@@ -409,6 +189,14 @@ func (siw *ServerInterfaceWrapper) ListJobs(c *gin.Context) {
 		return
 	}
 
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", c.Request.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter status: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -417,21 +205,6 @@ func (siw *ServerInterfaceWrapper) ListJobs(c *gin.Context) {
 	}
 
 	siw.Handler.ListJobs(c, params)
-}
-
-// SubmitJob operation middleware
-func (siw *ServerInterfaceWrapper) SubmitJob(c *gin.Context) {
-
-	c.Set(BearerAuthScopes, []string{})
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.SubmitJob(c)
 }
 
 // GetJob operation middleware
@@ -448,8 +221,6 @@ func (siw *ServerInterfaceWrapper) GetJob(c *gin.Context) {
 		return
 	}
 
-	c.Set(BearerAuthScopes, []string{})
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -458,32 +229,6 @@ func (siw *ServerInterfaceWrapper) GetJob(c *gin.Context) {
 	}
 
 	siw.Handler.GetJob(c, jobId)
-}
-
-// CancelJob operation middleware
-func (siw *ServerInterfaceWrapper) CancelJob(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "job_id" -------------
-	var jobId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "job_id", c.Param("job_id"), &jobId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter job_id: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	c.Set(BearerAuthScopes, []string{})
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.CancelJob(c, jobId)
 }
 
 // GetJobResultUrls operation middleware
@@ -499,8 +244,6 @@ func (siw *ServerInterfaceWrapper) GetJobResultUrls(c *gin.Context) {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter job_id: %w", err), http.StatusBadRequest)
 		return
 	}
-
-	c.Set(BearerAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetJobResultUrlsParams
@@ -521,62 +264,6 @@ func (siw *ServerInterfaceWrapper) GetJobResultUrls(c *gin.Context) {
 	}
 
 	siw.Handler.GetJobResultUrls(c, jobId, params)
-}
-
-// RetryJob operation middleware
-func (siw *ServerInterfaceWrapper) RetryJob(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "job_id" -------------
-	var jobId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "job_id", c.Param("job_id"), &jobId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter job_id: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	c.Set(BearerAuthScopes, []string{})
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.RetryJob(c, jobId)
-}
-
-// GetStandardPipelineSettings operation middleware
-func (siw *ServerInterfaceWrapper) GetStandardPipelineSettings(c *gin.Context) {
-
-	c.Set(BearerAuthScopes, []string{})
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetStandardPipelineSettings(c)
-}
-
-// PutStandardPipelineSettings operation middleware
-func (siw *ServerInterfaceWrapper) PutStandardPipelineSettings(c *gin.Context) {
-
-	c.Set(BearerAuthScopes, []string{})
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.PutStandardPipelineSettings(c)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -609,11 +296,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/healthz", wrapper.Healthz)
 	router.POST(options.BaseURL+"/v1/auth/login", wrapper.Login)
 	router.GET(options.BaseURL+"/v1/jobs", wrapper.ListJobs)
-	router.POST(options.BaseURL+"/v1/jobs", wrapper.SubmitJob)
 	router.GET(options.BaseURL+"/v1/jobs/:job_id", wrapper.GetJob)
-	router.POST(options.BaseURL+"/v1/jobs/:job_id/cancel", wrapper.CancelJob)
 	router.GET(options.BaseURL+"/v1/jobs/:job_id/result-urls", wrapper.GetJobResultUrls)
-	router.POST(options.BaseURL+"/v1/jobs/:job_id/retry", wrapper.RetryJob)
-	router.GET(options.BaseURL+"/v1/pipeline-settings/standard", wrapper.GetStandardPipelineSettings)
-	router.PUT(options.BaseURL+"/v1/pipeline-settings/standard", wrapper.PutStandardPipelineSettings)
 }

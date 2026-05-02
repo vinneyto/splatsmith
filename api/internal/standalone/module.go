@@ -3,12 +3,10 @@ package standalone
 import "github.com/vinneyto/splatmaker/api/internal/core"
 
 type Module struct {
-	AuthProvider               core.AuthProvider
-	LoginProvider              core.LoginProvider
-	JobRepository              core.JobRepository
-	PipelineSettingsRepository core.PipelineSettingsRepository
-	JobDispatcher              core.JobDispatcher
-	ResultURLResolver          core.ResultURLResolver
+	AuthProvider      core.AuthProvider
+	LoginProvider     core.LoginProvider
+	JobRepository     core.JobRepository
+	ResultURLResolver core.ResultURLResolver
 
 	closers []func() error
 }
@@ -18,30 +16,19 @@ func NewModule(cfg Config) (*Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	pipelineSettingsRepo, err := NewSQLitePipelineSettingsRepository(cfg.SQLitePath)
-	if err != nil {
-		_ = repo.Close()
-		return nil, err
-	}
 	resolver, err := NewFileResultURLResolver(cfg.ResultsRoot)
 	if err != nil {
-		_ = pipelineSettingsRepo.Close()
 		_ = repo.Close()
 		return nil, err
 	}
-	dispatcher := NewSimulatedJobDispatcher(repo)
 
 	devAuth := NewDevAuthProvider(cfg)
 	module := &Module{
-		AuthProvider:               devAuth,
-		LoginProvider:              devAuth,
-		JobRepository:              repo,
-		PipelineSettingsRepository: pipelineSettingsRepo,
-		JobDispatcher:              dispatcher,
-		ResultURLResolver:          resolver,
+		AuthProvider:      devAuth,
+		LoginProvider:     devAuth,
+		JobRepository:     repo,
+		ResultURLResolver: resolver,
 		closers: []func() error{
-			dispatcher.Close,
-			pipelineSettingsRepo.Close,
 			repo.Close,
 		},
 	}

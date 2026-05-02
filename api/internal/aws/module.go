@@ -3,21 +3,25 @@ package aws
 import "github.com/vinneyto/splatmaker/api/internal/core"
 
 type Module struct {
-	AuthProvider               core.AuthProvider
-	LoginProvider              core.LoginProvider
-	JobRepository              core.JobRepository
-	PipelineSettingsRepository core.PipelineSettingsRepository
-	JobDispatcher              core.JobDispatcher
-	ResultURLResolver          core.ResultURLResolver
+	AuthProvider      core.AuthProvider
+	LoginProvider     core.LoginProvider
+	JobRepository     core.JobRepository
+	ResultURLResolver core.ResultURLResolver
 }
 
-func NewModule(_ Config) (*Module, error) {
+func NewModule(cfg Config) (*Module, error) {
+	repo, err := NewDynamoJobRepository(cfg)
+	if err != nil {
+		return nil, err
+	}
+	resolver, err := NewS3ResultURLResolver(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &Module{
-		AuthProvider:               &authProviderStub{},
-		LoginProvider:              &loginProviderStub{},
-		JobRepository:              &jobRepositoryStub{},
-		PipelineSettingsRepository: &pipelineSettingsRepositoryStub{},
-		JobDispatcher:              &jobDispatcherStub{},
-		ResultURLResolver:          &resultURLResolverStub{},
+		AuthProvider:      NewALBAuthProvider(),
+		LoginProvider:     &loginProviderStub{},
+		JobRepository:     repo,
+		ResultURLResolver: resolver,
 	}, nil
 }
