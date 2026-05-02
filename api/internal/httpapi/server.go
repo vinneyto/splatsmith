@@ -18,10 +18,7 @@ func NewAPIServer(deps Dependencies) *APIServer { return &APIServer{deps: deps} 
 func (s *APIServer) Healthz(c *gin.Context) { c.JSON(http.StatusOK, HealthResponse{Status: "ok"}) }
 
 func (s *APIServer) ListJobs(c *gin.Context, params ListJobsParams) {
-	identity, ok := s.authenticate(c)
-	if !ok {
-		return
-	}
+	identity := core.UserIdentity{}
 	filter := core.JobListFilter{UserID: identity.UserID, Limit: fromIntPtr(params.Limit), Offset: fromIntPtr(params.Offset), Status: toCoreStatusPtr(params.Status)}
 	items, err := s.deps.JobService.ListJobs(c.Request.Context(), filter)
 	if err != nil {
@@ -36,10 +33,7 @@ func (s *APIServer) ListJobs(c *gin.Context, params ListJobsParams) {
 }
 
 func (s *APIServer) GetJob(c *gin.Context, jobID string) {
-	identity, ok := s.authenticate(c)
-	if !ok {
-		return
-	}
+	identity := core.UserIdentity{}
 	item, err := s.deps.JobService.GetJob(c.Request.Context(), identity.UserID, jobID)
 	if err != nil {
 		s.writeDomainError(c, err)
@@ -49,10 +43,7 @@ func (s *APIServer) GetJob(c *gin.Context, jobID string) {
 }
 
 func (s *APIServer) GetJobResultUrls(c *gin.Context, jobID string, params GetJobResultUrlsParams) {
-	identity, ok := s.authenticate(c)
-	if !ok {
-		return
-	}
+	identity := core.UserIdentity{}
 	items, err := s.deps.JobService.GetJobResultURLs(c.Request.Context(), identity.UserID, jobID, time.Duration(fromIntPtr(params.TtlSeconds))*time.Second)
 	if err != nil {
 		s.writeDomainError(c, err)
@@ -63,22 +54,6 @@ func (s *APIServer) GetJobResultUrls(c *gin.Context, jobID string, params GetJob
 		resp = append(resp, JobResultURL{Key: u.Key, FileName: u.FileName, Url: u.URL, ExpiresAt: u.ExpiresAt.UTC()})
 	}
 	c.JSON(http.StatusOK, JobResultURLsResponse{Items: resp})
-}
-
-func (s *APIServer) authenticate(c *gin.Context) (core.UserIdentity, bool) {
-	headers := map[string]string{}
-	for k, values := range c.Request.Header {
-		if len(values) == 0 {
-			continue
-		}
-		headers[k] = values[0]
-	}
-	identity, err := s.deps.AuthService.Authenticate(c.Request.Context(), headers)
-	if err != nil {
-		s.writeDomainError(c, err)
-		return core.UserIdentity{}, false
-	}
-	return identity, true
 }
 
 func (s *APIServer) writeDomainError(c *gin.Context, err error) {

@@ -208,9 +208,6 @@ VALUES
 }
 
 func (r *SQLiteJobRepository) List(ctx context.Context, filter core.JobListFilter) ([]core.JobSummary, error) {
-	if filter.UserID == "" {
-		return nil, fmt.Errorf("user id is required")
-	}
 	if filter.Limit <= 0 {
 		filter.Limit = 20
 	}
@@ -218,8 +215,12 @@ func (r *SQLiteJobRepository) List(ctx context.Context, filter core.JobListFilte
 	query := `
 SELECT job_id, user_id, idempotency_key, status, progress_percent, current_step, created_at, updated_at
 FROM jobs
-WHERE user_id = ?`
-	args := []any{filter.UserID}
+WHERE 1=1`
+	args := []any{}
+	if filter.UserID != "" {
+		query += ` AND user_id = ?`
+		args = append(args, filter.UserID)
+	}
 	if filter.Status != nil {
 		query += ` AND status = ?`
 		args = append(args, string(*filter.Status))
@@ -248,11 +249,17 @@ WHERE user_id = ?`
 }
 
 func (r *SQLiteJobRepository) GetByID(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
-	row := r.db.QueryRowContext(ctx, `
+	query := `
 SELECT job_id, user_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, source_ref, simulate_failure,
        started_at, finished_at, last_heartbeat_at, created_at, updated_at
 FROM jobs
-WHERE user_id = ? AND job_id = ?`, userID, jobID)
+WHERE job_id = ?`
+	args := []any{jobID}
+	if userID != "" {
+		query += ` AND user_id = ?`
+		args = append(args, userID)
+	}
+	row := r.db.QueryRowContext(ctx, query, args...)
 
 	details, err := detailsFromRow(row.Scan)
 	if err != nil {

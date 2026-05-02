@@ -10,7 +10,6 @@ import (
 
 type Runtime struct {
 	Mode         Mode
-	AuthService  *services.AuthService
 	JobService   *services.JobService
 	ResultURLTTL int
 	Close        func() error
@@ -29,7 +28,6 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 		}
 		return &Runtime{
 			Mode:         cfg.Mode,
-			AuthService:  services.NewAuthService(module.AuthProvider),
 			JobService:   services.NewJobService(module.JobRepository, module.ResultURLResolver),
 			ResultURLTTL: ttl,
 			Close:        module.Close,
@@ -41,7 +39,6 @@ func BuildRuntime(cfg Config) (*Runtime, error) {
 		}
 		return &Runtime{
 			Mode:         cfg.Mode,
-			AuthService:  services.NewAuthService(module.AuthProvider),
 			JobService:   services.NewJobService(module.JobRepository, module.ResultURLResolver),
 			ResultURLTTL: 900,
 			Close: func() error {
