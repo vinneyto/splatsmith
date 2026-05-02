@@ -18,8 +18,7 @@ func NewAPIServer(deps Dependencies) *APIServer { return &APIServer{deps: deps} 
 func (s *APIServer) Healthz(c *gin.Context) { c.JSON(http.StatusOK, HealthResponse{Status: "ok"}) }
 
 func (s *APIServer) ListJobs(c *gin.Context, params ListJobsParams) {
-	identity := core.UserIdentity{}
-	filter := core.JobListFilter{UserID: identity.UserID, Limit: fromIntPtr(params.Limit), Offset: fromIntPtr(params.Offset), Status: toCoreStatusPtr(params.Status)}
+	filter := core.JobListFilter{Limit: fromIntPtr(params.Limit), Offset: fromIntPtr(params.Offset), Status: toCoreStatusPtr(params.Status)}
 	items, err := s.deps.JobService.ListJobs(c.Request.Context(), filter)
 	if err != nil {
 		s.writeDomainError(c, err)
@@ -33,8 +32,7 @@ func (s *APIServer) ListJobs(c *gin.Context, params ListJobsParams) {
 }
 
 func (s *APIServer) GetJob(c *gin.Context, jobID string) {
-	identity := core.UserIdentity{}
-	item, err := s.deps.JobService.GetJob(c.Request.Context(), identity.UserID, jobID)
+	item, err := s.deps.JobService.GetJob(c.Request.Context(), jobID)
 	if err != nil {
 		s.writeDomainError(c, err)
 		return
@@ -43,8 +41,7 @@ func (s *APIServer) GetJob(c *gin.Context, jobID string) {
 }
 
 func (s *APIServer) GetJobResultUrls(c *gin.Context, jobID string, params GetJobResultUrlsParams) {
-	identity := core.UserIdentity{}
-	items, err := s.deps.JobService.GetJobResultURLs(c.Request.Context(), identity.UserID, jobID, time.Duration(fromIntPtr(params.TtlSeconds))*time.Second)
+	items, err := s.deps.JobService.GetJobResultURLs(c.Request.Context(), jobID, time.Duration(fromIntPtr(params.TtlSeconds))*time.Second)
 	if err != nil {
 		s.writeDomainError(c, err)
 		return

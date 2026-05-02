@@ -217,10 +217,6 @@ SELECT job_id, user_id, idempotency_key, status, progress_percent, current_step,
 FROM jobs
 WHERE 1=1`
 	args := []any{}
-	if filter.UserID != "" {
-		query += ` AND user_id = ?`
-		args = append(args, filter.UserID)
-	}
 	if filter.Status != nil {
 		query += ` AND status = ?`
 		args = append(args, string(*filter.Status))
@@ -248,18 +244,13 @@ WHERE 1=1`
 	return result, nil
 }
 
-func (r *SQLiteJobRepository) GetByID(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (r *SQLiteJobRepository) GetByID(ctx context.Context, jobID string) (*core.JobDetails, error) {
 	query := `
 SELECT job_id, user_id, idempotency_key, status, progress_percent, current_step, error_message, attempt, source_ref, simulate_failure,
        started_at, finished_at, last_heartbeat_at, created_at, updated_at
 FROM jobs
 WHERE job_id = ?`
-	args := []any{jobID}
-	if userID != "" {
-		query += ` AND user_id = ?`
-		args = append(args, userID)
-	}
-	row := r.db.QueryRowContext(ctx, query, args...)
+	row := r.db.QueryRowContext(ctx, query, jobID)
 
 	details, err := detailsFromRow(row.Scan)
 	if err != nil {
@@ -339,7 +330,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
 		}
 		return nil, err
 	}
-	return r.GetByID(ctx, userID, jobID)
+	return r.GetByID(ctx, jobID)
 }
 
 func (r *SQLiteJobRepository) SetRunning(ctx context.Context, jobID string) error {
@@ -503,7 +494,7 @@ WHERE user_id = ? AND job_id = ? AND status IN (?, ?, ?)`,
 	if rows == 0 {
 		return nil, core.ErrJobNotCancelable
 	}
-	return r.GetByID(ctx, userID, jobID)
+	return r.GetByID(ctx, jobID)
 }
 
 func (r *SQLiteJobRepository) ResetForRetry(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
@@ -531,7 +522,7 @@ WHERE user_id = ? AND job_id = ? AND status IN (?, ?)`,
 	if rows == 0 {
 		return nil, core.ErrJobNotRetryable
 	}
-	return r.GetByID(ctx, userID, jobID)
+	return r.GetByID(ctx, jobID)
 }
 
 func (r *SQLiteJobRepository) loadOutputs(ctx context.Context, jobID string) ([]core.OutputFileRef, error) {
@@ -581,7 +572,6 @@ func summaryFromRow(scanFn func(dest ...any) error) (*core.JobSummary, error) {
 	}
 	return &core.JobSummary{
 		JobID:           jobID,
-		UserID:          userID,
 		IdempotencyKey:  nullableStringPtr(sql.NullString{String: idempotencyKey, Valid: idempotencyKey != ""}),
 		Status:          core.JobStatus(statusRaw),
 		ProgressPercent: progress,
@@ -631,7 +621,6 @@ func detailsFromRow(scanFn func(dest ...any) error) (*core.JobDetails, error) {
 	return &core.JobDetails{
 		Summary: core.JobSummary{
 			JobID:           jobID,
-			UserID:          userID,
 			Status:          core.JobStatus(statusRaw),
 			ProgressPercent: progress,
 			CurrentStep:     nullableStringPtr(currentStep),

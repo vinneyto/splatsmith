@@ -55,7 +55,7 @@ func (r *DynamoJobRepository) List(ctx context.Context, filter core.JobListFilte
 		if err := attributevalue.UnmarshalMap(raw, &row); err != nil {
 			continue
 		}
-		items = append(items, toCoreSummary(row, filter.UserID))
+		items = append(items, toCoreSummary(row))
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i].UpdatedAt.After(items[j].UpdatedAt) })
 	if filter.Offset >= len(items) {
@@ -68,7 +68,7 @@ func (r *DynamoJobRepository) List(ctx context.Context, filter core.JobListFilte
 	return items[filter.Offset:end], nil
 }
 
-func (r *DynamoJobRepository) GetByID(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (r *DynamoJobRepository) GetByID(ctx context.Context, jobID string) (*core.JobDetails, error) {
 	out, err := r.ddb.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(r.tableName),
 		Key:       map[string]types.AttributeValue{"uuid": &types.AttributeValueMemberS{Value: jobID}},
@@ -83,7 +83,7 @@ func (r *DynamoJobRepository) GetByID(ctx context.Context, userID, jobID string)
 	if err := attributevalue.UnmarshalMap(out.Item, &row); err != nil {
 		return nil, err
 	}
-	summary := toCoreSummary(row, userID)
+	summary := toCoreSummary(row)
 	outputs := inferOutputFiles(row)
 	return &core.JobDetails{
 		Summary:      summary,
@@ -96,7 +96,7 @@ func (r *DynamoJobRepository) GetByID(ctx context.Context, userID, jobID string)
 	}, nil
 }
 
-func toCoreSummary(in dynamoJobItem, userID string) core.JobSummary {
+func toCoreSummary(in dynamoJobItem) core.JobSummary {
 	status := mapStatus(in.UUIDStatus)
 	updated := parseTime(in.UpdateTS)
 	if updated.IsZero() {
@@ -116,7 +116,6 @@ func toCoreSummary(in dynamoJobItem, userID string) core.JobSummary {
 	progress := inferProgress(status)
 	return core.JobSummary{
 		JobID:           in.UUID,
-		UserID:          userID,
 		Status:          status,
 		ProgressPercent: progress,
 		CreatedAt:       created,

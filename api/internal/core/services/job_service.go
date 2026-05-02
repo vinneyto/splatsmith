@@ -21,15 +21,15 @@ func (s *JobService) ListJobs(ctx context.Context, filter core.JobListFilter) ([
 	return s.repo.List(ctx, filter)
 }
 
-func (s *JobService) GetJob(ctx context.Context, userID, jobID string) (*core.JobDetails, error) {
+func (s *JobService) GetJob(ctx context.Context, jobID string) (*core.JobDetails, error) {
 	if strings.TrimSpace(jobID) == "" {
 		return nil, core.ErrInvalidArgument
 	}
-	return s.repo.GetByID(ctx, userID, jobID)
+	return s.repo.GetByID(ctx, jobID)
 }
 
-func (s *JobService) GetJobResultURLs(ctx context.Context, userID, jobID string, ttl time.Duration) ([]core.ResultFileURL, error) {
-	details, err := s.repo.GetByID(ctx, userID, jobID)
+func (s *JobService) GetJobResultURLs(ctx context.Context, jobID string, ttl time.Duration) ([]core.ResultFileURL, error) {
+	details, err := s.repo.GetByID(ctx, jobID)
 	if err != nil {
 		return nil, err
 	}

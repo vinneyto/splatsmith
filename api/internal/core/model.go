@@ -2,21 +2,6 @@ package core
 
 import "time"
 
-type UserIdentity struct {
-	UserID string
-	Email  string
-}
-
-type AuthClaims struct {
-	UserID string
-	Email  string
-}
-
-type LoginResult struct {
-	Token string
-	User  UserIdentity
-}
-
 type JobStatus string
 
 const (
@@ -29,7 +14,6 @@ const (
 )
 
 type JobListFilter struct {
-	UserID string
 	Status *JobStatus
 	Limit  int
 	Offset int
@@ -37,7 +21,6 @@ type JobListFilter struct {
 
 type JobSummary struct {
 	JobID           string
-	UserID          string
 	Status          JobStatus
 	ProgressPercent int
 	CurrentStep     *string
@@ -85,7 +68,6 @@ type SubmitJobResult struct {
 
 type JobDispatchRequest struct {
 	JobID           string
-	UserID          string
 	SimulateFailure bool
 	IdempotencyKey  string
 	CurrentAttempt  int
