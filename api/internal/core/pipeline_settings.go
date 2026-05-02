@@ -19,52 +19,52 @@ type PipelineSettings struct {
 }
 
 type VideoProcessingSettings struct {
-	MaxNumImages       string `json:"maxNumImages"`
+	MaxNumImages       int    `json:"maxNumImages"`
 	VideoStartTime     string `json:"videoStartTime"`
 	VideoStopTime      string `json:"videoStopTime"`
-	FilterBlurryImages string `json:"filterBlurryImages"`
+	FilterBlurryImages bool   `json:"filterBlurryImages"`
 }
 
 type ReconstructionSettings struct {
-	Enable                          string             `json:"enable"`
+	Enable                          bool               `json:"enable"`
 	SoftwareName                    string             `json:"softwareName"`
-	EnableEnhancedFeatureExtraction string             `json:"enableEnhancedFeatureExtraction"`
+	EnableEnhancedFeatureExtraction bool               `json:"enableEnhancedFeatureExtraction"`
 	MatchingMethod                  string             `json:"matchingMethod"`
-	EnableFlHeuristic               string             `json:"enableFlHeuristic"`
-	FlHeuristicValue                string             `json:"flHeuristicValue"`
-	EnableFlMetric                  string             `json:"enableFlMetric"`
-	FlMetricValue                   string             `json:"flMetricValue"`
+	EnableFlHeuristic               bool               `json:"enableFlHeuristic"`
+	FlHeuristicValue                float64            `json:"flHeuristicValue"`
+	EnableFlMetric                  bool               `json:"enableFlMetric"`
+	FlMetricValue                   float64            `json:"flMetricValue"`
 	PosePriors                      PosePriorsSettings `json:"posePriors"`
 }
 
 type PosePriorsSettings struct {
-	UsePosePriorColmapModelFiles string                         `json:"usePosePriorColmapModelFiles"`
+	UsePosePriorColmapModelFiles bool                           `json:"usePosePriorColmapModelFiles"`
 	UsePosePriorTransformJSON    PosePriorTransformJSONSettings `json:"usePosePriorTransformJson"`
 }
 
 type PosePriorTransformJSONSettings struct {
-	Enable               string `json:"enable"`
+	Enable               bool   `json:"enable"`
 	SourceCoordinateName string `json:"sourceCoordinateName"`
-	PoseIsWorldToCam     string `json:"poseIsWorldToCam"`
+	PoseIsWorldToCam     bool   `json:"poseIsWorldToCam"`
 }
 
 type TrainingSettings struct {
-	Enable             string `json:"enable"`
-	MaxSteps           string `json:"maxSteps"`
+	Enable             bool   `json:"enable"`
+	MaxSteps           int    `json:"maxSteps"`
 	Model              string `json:"model"`
 	ThreeDIsp          string `json:"3dIsp"`
-	PreserveSceneScale string `json:"preserveSceneScale"`
-	EnableDepthLoss    string `json:"enableDepthLoss"`
+	PreserveSceneScale bool   `json:"preserveSceneScale"`
+	EnableDepthLoss    bool   `json:"enableDepthLoss"`
 }
 
 type PostProcessingSettings struct {
-	CropOutputBounds  string `json:"cropOutputBounds"`
+	CropOutputBounds  bool   `json:"cropOutputBounds"`
 	CropMode          string `json:"cropMode"`
-	CleanSplat        string `json:"cleanSplat"`
-	EnableSpz         string `json:"enableSpz"`
-	EnableSog         string `json:"enableSog"`
-	EnableUsdz        string `json:"enableUsdz"`
-	EnableVideoExport string `json:"enableVideoExport"`
+	CleanSplat        bool   `json:"cleanSplat"`
+	EnableSpz         bool   `json:"enableSpz"`
+	EnableSog         bool   `json:"enableSog"`
+	EnableUsdz        bool   `json:"enableUsdz"`
+	EnableVideoExport bool   `json:"enableVideoExport"`
 	PlyCoords         string `json:"plyCoords"`
 	SpzCoords         string `json:"spzCoords"`
 	SogCoords         string `json:"sogCoords"`
@@ -72,9 +72,9 @@ type PostProcessingSettings struct {
 }
 
 type SphericalCameraSettings struct {
-	Enable                       string `json:"enable"`
+	Enable                       bool   `json:"enable"`
 	CubeFacesToRemove            string `json:"cubeFacesToRemove"`
-	OptimizeSequentialFrameOrder string `json:"optimizeSequentialFrameOrder"`
+	OptimizeSequentialFrameOrder bool   `json:"optimizeSequentialFrameOrder"`
 }
 
 type SegmentationSettings struct {
@@ -83,13 +83,13 @@ type SegmentationSettings struct {
 }
 
 type BackgroundRemovalSettings struct {
-	Enable        string `json:"enable"`
+	Enable        bool   `json:"enable"`
 	Model         string `json:"model"`
-	MaskThreshold string `json:"maskThreshold"`
+	MaskThreshold float64 `json:"maskThreshold"`
 }
 
 type ObjectRemovalSettings struct {
-	Enable  string `json:"enable"`
+	Enable  bool   `json:"enable"`
 	Action  string `json:"action"`
 	Objects string `json:"objects"`
 }
@@ -97,63 +97,63 @@ type ObjectRemovalSettings struct {
 func NewDefaultPipelineSettings() PipelineSettings {
 	return PipelineSettings{
 		VideoProcessing: VideoProcessingSettings{
-			MaxNumImages:       "300",
+			MaxNumImages:       300,
 			VideoStartTime:     "0",
 			VideoStopTime:      "None",
-			FilterBlurryImages: "true",
+			FilterBlurryImages: true,
 		},
 		Reconstruction: ReconstructionSettings{
-			Enable:                          "true",
+			Enable:                          true,
 			SoftwareName:                    "glomap",
-			EnableEnhancedFeatureExtraction: "false",
+			EnableEnhancedFeatureExtraction: false,
 			MatchingMethod:                  "sequential",
-			EnableFlHeuristic:               "false",
-			FlHeuristicValue:                "1.2",
-			EnableFlMetric:                  "false",
-			FlMetricValue:                   "24",
+			EnableFlHeuristic:               false,
+			FlHeuristicValue:                1.2,
+			EnableFlMetric:                  false,
+			FlMetricValue:                   24,
 			PosePriors: PosePriorsSettings{
-				UsePosePriorColmapModelFiles: "false",
+				UsePosePriorColmapModelFiles: false,
 				UsePosePriorTransformJSON: PosePriorTransformJSONSettings{
-					Enable:               "false",
+					Enable:               false,
 					SourceCoordinateName: "arkit",
-					PoseIsWorldToCam:     "true",
+					PoseIsWorldToCam:     true,
 				},
 			},
 		},
 		Training: TrainingSettings{
-			Enable:             "true",
-			MaxSteps:           "15000",
+			Enable:             true,
+			MaxSteps:           15000,
 			Model:              "splatfacto",
 			ThreeDIsp:          "none",
-			PreserveSceneScale: "false",
-			EnableDepthLoss:    "false",
+			PreserveSceneScale: false,
+			EnableDepthLoss:    false,
 		},
 		PostProcessing: PostProcessingSettings{
-			CropOutputBounds:  "false",
+			CropOutputBounds:  false,
 			CropMode:          "environment",
-			CleanSplat:        "false",
-			EnableSpz:         "true",
-			EnableSog:         "true",
-			EnableUsdz:        "true",
-			EnableVideoExport: "true",
+			CleanSplat:        false,
+			EnableSpz:         true,
+			EnableSog:         true,
+			EnableUsdz:        true,
+			EnableVideoExport: true,
 			PlyCoords:         "rhyu",
 			SpzCoords:         "rhyu",
 			SogCoords:         "rhyu",
 			UsdzCoords:        "rhyu",
 		},
 		SphericalCamera: SphericalCameraSettings{
-			Enable:                       "false",
+			Enable:                       false,
 			CubeFacesToRemove:            "['down', 'up']",
-			OptimizeSequentialFrameOrder: "true",
+			OptimizeSequentialFrameOrder: true,
 		},
 		Segmentation: SegmentationSettings{
 			BackgroundRemoval: BackgroundRemovalSettings{
-				Enable:        "false",
+				Enable:        false,
 				Model:         "u2net",
-				MaskThreshold: "0.6",
+				MaskThreshold: 0.6,
 			},
 			ObjectRemoval: ObjectRemovalSettings{
-				Enable:  "false",
+				Enable:  false,
 				Action:  "erase",
 				Objects: "['human']",
 			},
