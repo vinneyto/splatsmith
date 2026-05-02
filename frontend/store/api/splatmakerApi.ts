@@ -62,6 +62,75 @@ export type JobResultUrlsResponse = {
   items: ResultFileURL[];
 };
 
+export type PipelineSettings = {
+  videoProcessing: {
+    maxNumImages: string;
+    videoStartTime: string;
+    videoStopTime: string;
+    filterBlurryImages: string;
+  };
+  reconstruction: {
+    enable: string;
+    softwareName: "glomap" | "colmap" | "hloc" | "map_anything";
+    enableEnhancedFeatureExtraction: string;
+    matchingMethod: "sequential" | "exhaustive" | "spatial" | "vocab" | "vocab_tree" | "transitive";
+    enableFlHeuristic: string;
+    flHeuristicValue: string;
+    enableFlMetric: string;
+    flMetricValue: string;
+    posePriors: {
+      usePosePriorColmapModelFiles: string;
+      usePosePriorTransformJson: {
+        enable: string;
+        sourceCoordinateName: string;
+        poseIsWorldToCam: string;
+      };
+    };
+  };
+  training: {
+    enable: string;
+    maxSteps: string;
+    model: "splatfacto" | "splatfacto-big" | "splatfacto-mcmc" | "splatfacto-w-light" | "3dgut" | "3dgrt" | "nerfacto";
+    "3dIsp": "none" | "bilagrid" | "ppisp";
+    preserveSceneScale: string;
+    enableDepthLoss: string;
+  };
+  postProcessing: {
+    cropOutputBounds: string;
+    cropMode: "environment" | "rigid_body";
+    cleanSplat: string;
+    enableSpz: string;
+    enableSog: string;
+    enableUsdz: string;
+    enableVideoExport: string;
+    plyCoords: "rhyu" | "lhyu" | "rhzu" | "lhzu";
+    spzCoords: "rhyu" | "lhyu" | "rhzu" | "lhzu";
+    sogCoords: "rhyu" | "lhyu" | "rhzu" | "lhzu";
+    usdzCoords: "rhyu" | "lhyu" | "rhzu" | "lhzu";
+  };
+  sphericalCamera: {
+    enable: string;
+    cubeFacesToRemove: string;
+    optimizeSequentialFrameOrder: string;
+  };
+  segmentation: {
+    backgroundRemoval: {
+      enable: string;
+      model: "u2net" | "sam2";
+      maskThreshold: string;
+    };
+    objectRemoval: {
+      enable: string;
+      action: "erase" | "remove";
+      objects: string;
+    };
+  };
+};
+
+export type PipelineSettingsResponse = {
+  settings: PipelineSettings;
+};
+
 export const splatmakerApi = createApi({
   reducerPath: "splatmakerApi",
   baseQuery: fetchBaseQuery({
@@ -76,7 +145,7 @@ export const splatmakerApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Jobs"],
+  tagTypes: ["Jobs", "PipelineSettings"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (body) => ({
@@ -107,7 +176,29 @@ export const splatmakerApi = createApi({
       }),
       providesTags: (_result, _error, arg) => [{ type: "Jobs", id: arg.jobId }],
     }),
+    getStandardPipelineSettings: builder.query<PipelineSettingsResponse, void>({
+      query: () => ({
+        url: "/v1/pipeline-settings/standard",
+        method: "GET",
+      }),
+      providesTags: ["PipelineSettings"],
+    }),
+    putStandardPipelineSettings: builder.mutation<PipelineSettingsResponse, PipelineSettings>({
+      query: (body) => ({
+        url: "/v1/pipeline-settings/standard",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["PipelineSettings"],
+    }),
   }),
 });
 
-export const { useLoginMutation, useListJobsQuery, useGetJobQuery, useGetJobResultUrlsQuery } = splatmakerApi;
+export const {
+  useLoginMutation,
+  useListJobsQuery,
+  useGetJobQuery,
+  useGetJobResultUrlsQuery,
+  useGetStandardPipelineSettingsQuery,
+  usePutStandardPipelineSettingsMutation,
+} = splatmakerApi;

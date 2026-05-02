@@ -32,16 +32,23 @@ export default function ReconstructionsPage() {
           <h1 className="text-2xl font-semibold">Reconstructions</h1>
           {user ? <p className="text-sm text-muted-foreground">Signed in as {user.email}</p> : null}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            dispatch(logout());
-            router.push("/login");
-          }}
-        >
-          Logout
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/settings/pipeline">
+            <Button variant="outline" size="sm">
+              Pipeline settings
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              dispatch(logout());
+              router.push("/login");
+            }}
+          >
+            Logout
+          </Button>
+        </div>
       </header>
 
       {isLoading ? <p className="text-sm text-muted-foreground">Loading reconstructions...</p> : null}
