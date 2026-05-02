@@ -20,8 +20,8 @@ type PipelineSettings struct {
 
 type VideoProcessingSettings struct {
 	MaxNumImages       int    `json:"maxNumImages"`
-	VideoStartTime     string `json:"videoStartTime"`
-	VideoStopTime      string `json:"videoStopTime"`
+	VideoStartTime     int    `json:"videoStartTime"`
+	VideoStopTime      int    `json:"videoStopTime"`
 	FilterBlurryImages bool   `json:"filterBlurryImages"`
 }
 
@@ -98,8 +98,8 @@ func NewDefaultPipelineSettings() PipelineSettings {
 	return PipelineSettings{
 		VideoProcessing: VideoProcessingSettings{
 			MaxNumImages:       300,
-			VideoStartTime:     "0",
-			VideoStopTime:      "None",
+			VideoStartTime:     0,
+			VideoStopTime:      -1,
 			FilterBlurryImages: true,
 		},
 		Reconstruction: ReconstructionSettings{
