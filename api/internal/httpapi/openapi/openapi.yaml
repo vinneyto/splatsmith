@@ -1,209 +1,23 @@
 openapi: 3.0.3
 info:
-  title: Splatmaker API
-  version: 0.2.0
-  description: Core-first API module with async orchestration and idempotent job submission.
+  title: splatmaker viewer api
+  version: 1.0.0
 servers:
   - url: /
-security:
-  - bearerAuth: []
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  schemas:
-    HealthResponse:
-      type: object
-      required: [status, mode]
-      properties:
-        status:
-          type: string
-        mode:
-          type: string
-    JobStatus:
-      type: string
-      enum: [new, queued, in_progress, done, failed, cancelled]
-    JobSummary:
-      type: object
-      required: [job_id, status, progress_percent, created_at, updated_at]
-      properties:
-        job_id:
-          type: string
-        status:
-          $ref: '#/components/schemas/JobStatus'
-        progress_percent:
-          type: integer
-          minimum: 0
-          maximum: 100
-        current_step:
-          type: string
-          nullable: true
-        idempotency_key:
-          type: string
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    JobDetails:
-      type: object
-      required: [summary, attempt, simulate_failure, output_files]
-      properties:
-        summary:
-          $ref: '#/components/schemas/JobSummary'
-        attempt:
-          type: integer
-          minimum: 1
-        source_ref:
-          type: string
-          nullable: true
-        simulate_failure:
-          type: boolean
-        error_message:
-          type: string
-          nullable: true
-        started_at:
-          type: string
-          format: date-time
-          nullable: true
-        finished_at:
-          type: string
-          format: date-time
-          nullable: true
-        last_heartbeat_at:
-          type: string
-          format: date-time
-          nullable: true
-        output_files:
-          type: array
-          items:
-            $ref: '#/components/schemas/OutputFileRef'
-    OutputFileRef:
-      type: object
-      required: [key, file_name]
-      properties:
-        key:
-          type: string
-        file_name:
-          type: string
-        size_bytes:
-          type: integer
-          nullable: true
-    ListJobsResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/JobSummary'
-    SubmitJobRequest:
-      type: object
-      required: [idempotency_key]
-      properties:
-        idempotency_key:
-          type: string
-          minLength: 1
-        name:
-          type: string
-          nullable: true
-        source_ref:
-          type: string
-          nullable: true
-        simulate_failure:
-          type: boolean
-          default: false
-    SubmitJobResponse:
-      type: object
-      required: [created, job]
-      properties:
-        created:
-          type: boolean
-        job:
-          $ref: '#/components/schemas/JobDetails'
-    JobMutationResponse:
-      type: object
-      required: [job]
-      properties:
-        job:
-          $ref: '#/components/schemas/JobDetails'
-    ResultFileURL:
-      type: object
-      required: [key, file_name, url, expires_at]
-      properties:
-        key:
-          type: string
-        file_name:
-          type: string
-        url:
-          type: string
-        expires_at:
-          type: string
-          format: date-time
-    JobResultURLsResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResultFileURL'
-    LoginRequest:
-      type: object
-      required: [username, password]
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-    AuthUser:
-      type: object
-      required: [user_id, email]
-      properties:
-        user_id:
-          type: string
-        email:
-          type: string
-    LoginResponse:
-      type: object
-      required: [access_token, token_type, user]
-      properties:
-        access_token:
-          type: string
-        token_type:
-          type: string
-          enum: [Bearer]
-        user:
-          $ref: '#/components/schemas/AuthUser'
-    ErrorResponse:
-      type: object
-      required: [error]
-      properties:
-        error:
-          type: string
 paths:
   /healthz:
     get:
       operationId: healthz
-      summary: Health check
-      security: []
       responses:
         '200':
-          description: OK
+          description: ok
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
-
   /v1/auth/login:
     post:
       operationId: login
-      summary: Username/password login (standalone)
-      security: []
       requestBody:
         required: true
         content:
@@ -212,219 +26,157 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Login success
+          description: login success
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
-        '401':
-          description: Invalid credentials
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: Not implemented for current runtime mode
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /v1/jobs:
     get:
       operationId: listJobs
-      summary: List current user jobs
       parameters:
-        - name: limit
-          in: query
+        - in: query
+          name: limit
           schema:
             type: integer
-            default: 20
             minimum: 1
             maximum: 200
-        - name: offset
-          in: query
+        - in: query
+          name: offset
           schema:
             type: integer
-            default: 0
             minimum: 0
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/JobStatus'
       responses:
         '200':
-          description: Jobs list
+          description: list jobs
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListJobsResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    post:
-      operationId: submitJob
-      summary: Submit a reconstruction job asynchronously (idempotent by idempotency_key)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubmitJobRequest'
-      responses:
-        '202':
-          description: Job queued or idempotent replay resolved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SubmitJobResponse'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /v1/jobs/{job_id}:
     get:
       operationId: getJob
-      summary: Get details for a single job
       parameters:
-        - name: job_id
-          in: path
+        - in: path
+          name: job_id
           required: true
           schema:
             type: string
       responses:
         '200':
-          description: Job details
+          description: job details
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /v1/jobs/{job_id}/cancel:
-    post:
-      operationId: cancelJob
-      summary: Cancel a queued/running job
-      parameters:
-        - name: job_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Job cancelled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JobMutationResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Job cannot be cancelled in current state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /v1/jobs/{job_id}/retry:
-    post:
-      operationId: retryJob
-      summary: Retry a failed/cancelled job
-      parameters:
-        - name: job_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Job queued for retry
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JobMutationResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Job cannot be retried in current state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /v1/jobs/{job_id}/result-urls:
     get:
       operationId: getJobResultUrls
-      summary: Resolve result file URLs for a job
       parameters:
-        - name: job_id
-          in: path
+        - in: path
+          name: job_id
           required: true
           schema:
             type: string
-        - name: ttl_seconds
-          in: query
+        - in: query
+          name: ttl_seconds
           schema:
             type: integer
-            default: 900
-            minimum: 1
+            minimum: 60
+            maximum: 86400
       responses:
         '200':
-          description: Result URLs
+          description: signed urls
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobResultURLsResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-x-splatmaker-runtime:
-  mode: standalone
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+    LoginResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string }
+        expires_in: { type: integer }
+    JobStatus:
+      type: string
+      enum: [queued, running, succeeded, failed, canceled]
+    JobSummary:
+      type: object
+      required: [job_id, status, created_at, updated_at]
+      properties:
+        job_id: { type: string }
+        status: { $ref: '#/components/schemas/JobStatus' }
+        progress_percent: { type: integer, minimum: 0, maximum: 100 }
+        current_step: { type: string }
+        idempotency_key: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    OutputFileRef:
+      type: object
+      required: [key, file_name]
+      properties:
+        key: { type: string }
+        file_name: { type: string }
+        size_bytes: { type: integer }
+    JobDetails:
+      type: object
+      required: [summary, attempt, source_ref, output_files]
+      properties:
+        summary: { $ref: '#/components/schemas/JobSummary' }
+        attempt: { type: integer }
+        source_ref: { type: string }
+        simulate_failure: { type: boolean }
+        error_message: { type: string }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+        last_heartbeat_at: { type: string, format: date-time }
+        output_files:
+          type: array
+          items: { $ref: '#/components/schemas/OutputFileRef' }
+    ListJobsResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/JobSummary' }
+    JobResultURL:
+      type: object
+      required: [key, file_name, url, expires_at]
+      properties:
+        key: { type: string }
+        file_name: { type: string }
+        url: { type: string }
+        expires_at: { type: string, format: date-time }
+    JobResultURLsResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/JobResultURL' }

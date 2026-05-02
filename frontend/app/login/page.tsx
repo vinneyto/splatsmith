@@ -34,7 +34,7 @@ export default function LoginPage() {
       dispatch(
         setAuth({
           token: result.access_token,
-          user: { userId: result.user.user_id, email: result.user.email },
+          user: { userId: username, email: `${username}@local` },
         })
       );
       router.push("/reconstructions");

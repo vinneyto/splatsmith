@@ -6,7 +6,6 @@ type Module struct {
 	AuthProvider      core.AuthProvider
 	LoginProvider     core.LoginProvider
 	JobRepository     core.JobRepository
-	JobDispatcher     core.JobDispatcher
 	ResultURLResolver core.ResultURLResolver
 
 	closers []func() error
@@ -22,17 +21,14 @@ func NewModule(cfg Config) (*Module, error) {
 		_ = repo.Close()
 		return nil, err
 	}
-	dispatcher := NewSimulatedJobDispatcher(repo)
 
 	devAuth := NewDevAuthProvider(cfg)
 	module := &Module{
 		AuthProvider:      devAuth,
 		LoginProvider:     devAuth,
 		JobRepository:     repo,
-		JobDispatcher:     dispatcher,
 		ResultURLResolver: resolver,
 		closers: []func() error{
-			dispatcher.Close,
 			repo.Close,
 		},
 	}

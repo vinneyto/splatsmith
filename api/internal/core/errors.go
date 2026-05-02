@@ -8,6 +8,7 @@ var (
 	ErrInvalidCredentials     = errors.New("invalid credentials")
 	ErrNotImplemented         = errors.New("not implemented")
 	ErrJobNotFound            = errors.New("job not found")
+	ErrNotFound               = errors.New("not found")
 	ErrInvalidArgument        = errors.New("invalid argument")
 	ErrConflict               = errors.New("conflict")
 	ErrIdempotencyKeyRequired = errors.New("idempotency key is required")
