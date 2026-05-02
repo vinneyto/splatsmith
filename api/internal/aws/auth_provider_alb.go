@@ -8,28 +8,17 @@ import (
 	"github.com/vinneyto/splatmaker/api/internal/core"
 )
 
-type ctxKey string
-
-const (
-	ctxUserIDKey ctxKey = "aws.alb.user_id"
-	ctxEmailKey  ctxKey = "aws.alb.email"
-)
-
 type ALBAuthProvider struct{}
 
 func NewALBAuthProvider() *ALBAuthProvider { return &ALBAuthProvider{} }
 
-func WithALBIdentity(ctx context.Context, userID, email string) context.Context {
-	ctx = context.WithValue(ctx, ctxUserIDKey, strings.TrimSpace(userID))
-	ctx = context.WithValue(ctx, ctxEmailKey, strings.TrimSpace(email))
-	return ctx
-}
-
-func (p *ALBAuthProvider) ValidateToken(ctx context.Context, _ string) (core.AuthClaims, error) {
-	userID, _ := ctx.Value(ctxUserIDKey).(string)
-	email, _ := ctx.Value(ctxEmailKey).(string)
-	if userID == "" {
+func (p *ALBAuthProvider) ValidateToken(ctx context.Context, token string) (core.AuthClaims, error) {
+	if !strings.EqualFold(strings.TrimSpace(token), "alb") {
+		return core.AuthClaims{}, fmt.Errorf("unexpected alb auth token: %w", core.ErrInvalidToken)
+	}
+	claims, ok := core.AuthClaimsFromContext(ctx)
+	if !ok || strings.TrimSpace(claims.UserID) == "" {
 		return core.AuthClaims{}, fmt.Errorf("missing alb identity: %w", core.ErrUnauthorized)
 	}
-	return core.AuthClaims{UserID: userID, Email: email}, nil
+	return core.AuthClaims{UserID: strings.TrimSpace(claims.UserID), Email: strings.TrimSpace(claims.Email)}, nil
 }

@@ -10,12 +10,12 @@ import (
 )
 
 type Runtime struct {
-	Mode                    Mode
-	AuthService             *services.AuthService
-	AuthRequestAdapter      core.AuthRequestAdapter
-	JobService              *services.JobService
-	ResultURLTTL            int
-	Close                   func() error
+	Mode               Mode
+	AuthService        *services.AuthService
+	AuthRequestAdapter core.AuthRequestAdapter
+	JobService         *services.JobService
+	ResultURLTTL       int
+	Close              func() error
 }
 
 func BuildRuntime(cfg Config) (*Runtime, error) {

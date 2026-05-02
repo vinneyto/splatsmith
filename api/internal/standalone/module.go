@@ -23,7 +23,7 @@ func NewModule(cfg Config) (*Module, error) {
 	}
 
 	devAuth := NewDevAuthProvider(cfg)
-	authReqAdapter, err := NewFixedTokenAuthRequestAdapter(cfg.DevToken)
+	authReqAdapter, err := NewFixedTokenAuthRequestAdapter(cfg.DevToken, cfg.DevUserID, cfg.DevUserEmail)
 	if err != nil {
 		_ = repo.Close()
 		return nil, err
