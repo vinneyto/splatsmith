@@ -37,22 +37,10 @@ export interface JobResultURL {
   expires_at: string;
 }
 
-// kept for compatibility with legacy settings UI; viewer mode does not use it.
-
-const getToken = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('splatmaker_token');
-};
-
 export const splatmakerApi = createApi({
   reducerPath: 'splatmakerApi',
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
-    prepareHeaders: (headers) => {
-      const token = getToken();
-      if (token) headers.set('Authorization', `Bearer ${token}`);
-      return headers;
-    },
   }),
   tagTypes: ['Jobs'],
   endpoints: (builder) => ({
