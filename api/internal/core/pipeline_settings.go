@@ -244,6 +244,8 @@ type PipelineSettingsRecordType string
 const (
 	PipelineSettingsRecordTypePreset   PipelineSettingsRecordType = "preset"
 	PipelineSettingsRecordTypeSnapshot PipelineSettingsRecordType = "snapshot"
+
+	PipelineSettingsPresetNameStandard = "standard"
 )
 
 type PipelineSettings struct {

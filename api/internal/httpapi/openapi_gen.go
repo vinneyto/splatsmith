@@ -16,6 +16,16 @@ const (
 	BearerAuthScopes = "bearerAuth.Scopes"
 )
 
+// Defines values for BackgroundRemovalModel.
+const (
+	U2net BackgroundRemovalModel = "u2net"
+)
+
+// Defines values for CoordinateSystem.
+const (
+	Rhyu CoordinateSystem = "rhyu"
+)
+
 // Defines values for JobStatus.
 const (
 	Cancelled  JobStatus = "cancelled"
@@ -31,11 +41,52 @@ const (
 	Bearer LoginResponseTokenType = "Bearer"
 )
 
+// Defines values for ObjectRemovalAction.
+const (
+	Erase ObjectRemovalAction = "erase"
+)
+
+// Defines values for PostProcessingCropMode.
+const (
+	Environment PostProcessingCropMode = "environment"
+)
+
+// Defines values for ReconstructionMatchingMethod.
+const (
+	Exhaustive ReconstructionMatchingMethod = "exhaustive"
+	Sequential ReconstructionMatchingMethod = "sequential"
+	Spatial    ReconstructionMatchingMethod = "spatial"
+	Transitive ReconstructionMatchingMethod = "transitive"
+	VocabTree  ReconstructionMatchingMethod = "vocab_tree"
+)
+
+// Defines values for ReconstructionSoftwareName.
+const (
+	Colmap ReconstructionSoftwareName = "colmap"
+	Glomap ReconstructionSoftwareName = "glomap"
+)
+
+// Defines values for Training3DIsp.
+const (
+	None Training3DIsp = "none"
+)
+
+// Defines values for TrainingModel.
+const (
+	Splatfacto TrainingModel = "splatfacto"
+)
+
 // AuthUser defines model for AuthUser.
 type AuthUser struct {
 	Email  string `json:"email"`
 	UserId string `json:"user_id"`
 }
+
+// BackgroundRemovalModel defines model for BackgroundRemovalModel.
+type BackgroundRemovalModel string
+
+// CoordinateSystem defines model for CoordinateSystem.
+type CoordinateSystem string
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
@@ -106,12 +157,97 @@ type LoginResponse struct {
 // LoginResponseTokenType defines model for LoginResponse.TokenType.
 type LoginResponseTokenType string
 
+// ObjectRemovalAction defines model for ObjectRemovalAction.
+type ObjectRemovalAction string
+
 // OutputFileRef defines model for OutputFileRef.
 type OutputFileRef struct {
 	FileName  string `json:"file_name"`
 	Key       string `json:"key"`
 	SizeBytes *int   `json:"size_bytes"`
 }
+
+// PipelineSettings defines model for PipelineSettings.
+type PipelineSettings struct {
+	PostProcessing struct {
+		CleanSplat        bool                   `json:"cleanSplat"`
+		CropMode          PostProcessingCropMode `json:"cropMode"`
+		CropOutputBounds  bool                   `json:"cropOutputBounds"`
+		EnableSog         bool                   `json:"enableSog"`
+		EnableSpz         bool                   `json:"enableSpz"`
+		EnableUsdz        bool                   `json:"enableUsdz"`
+		EnableVideoExport bool                   `json:"enableVideoExport"`
+		PlyCoords         CoordinateSystem       `json:"plyCoords"`
+		SogCoords         CoordinateSystem       `json:"sogCoords"`
+		SpzCoords         CoordinateSystem       `json:"spzCoords"`
+		UsdzCoords        CoordinateSystem       `json:"usdzCoords"`
+	} `json:"postProcessing"`
+	Reconstruction struct {
+		Enable                          bool                         `json:"enable"`
+		EnableEnhancedFeatureExtraction bool                         `json:"enableEnhancedFeatureExtraction"`
+		EnableFlHeuristic               bool                         `json:"enableFlHeuristic"`
+		EnableFlMetric                  bool                         `json:"enableFlMetric"`
+		FlHeuristicValue                float32                      `json:"flHeuristicValue"`
+		FlMetricValue                   float32                      `json:"flMetricValue"`
+		MatchingMethod                  ReconstructionMatchingMethod `json:"matchingMethod"`
+		PosePriors                      struct {
+			UsePosePriorColmapModelFiles bool `json:"usePosePriorColmapModelFiles"`
+			UsePosePriorTransformJson    struct {
+				Enable               bool   `json:"enable"`
+				PoseIsWorldToCam     bool   `json:"poseIsWorldToCam"`
+				SourceCoordinateName string `json:"sourceCoordinateName"`
+			} `json:"usePosePriorTransformJson"`
+		} `json:"posePriors"`
+		SoftwareName ReconstructionSoftwareName `json:"softwareName"`
+	} `json:"reconstruction"`
+	Segmentation struct {
+		BackgroundRemoval struct {
+			Enable        bool                   `json:"enable"`
+			MaskThreshold float32                `json:"maskThreshold"`
+			Model         BackgroundRemovalModel `json:"model"`
+		} `json:"backgroundRemoval"`
+		ObjectRemoval struct {
+			Action  ObjectRemovalAction `json:"action"`
+			Enable  bool                `json:"enable"`
+			Objects string              `json:"objects"`
+		} `json:"objectRemoval"`
+	} `json:"segmentation"`
+	SphericalCamera struct {
+		CubeFacesToRemove            string `json:"cubeFacesToRemove"`
+		Enable                       bool   `json:"enable"`
+		OptimizeSequentialFrameOrder bool   `json:"optimizeSequentialFrameOrder"`
+	} `json:"sphericalCamera"`
+	Training struct {
+		N3dIsp             Training3DIsp `json:"3dIsp"`
+		Enable             bool          `json:"enable"`
+		EnableDepthLoss    bool          `json:"enableDepthLoss"`
+		MaxSteps           int           `json:"maxSteps"`
+		Model              TrainingModel `json:"model"`
+		PreserveSceneScale bool          `json:"preserveSceneScale"`
+	} `json:"training"`
+	VideoProcessing struct {
+		FilterBlurryImages bool `json:"filterBlurryImages"`
+		MaxNumImages       int  `json:"maxNumImages"`
+		VideoStartTime     int  `json:"videoStartTime"`
+
+		// VideoStopTime -1 means unset
+		VideoStopTime int `json:"videoStopTime"`
+	} `json:"videoProcessing"`
+}
+
+// PipelineSettingsResponse defines model for PipelineSettingsResponse.
+type PipelineSettingsResponse struct {
+	Settings PipelineSettings `json:"settings"`
+}
+
+// PostProcessingCropMode defines model for PostProcessingCropMode.
+type PostProcessingCropMode string
+
+// ReconstructionMatchingMethod defines model for ReconstructionMatchingMethod.
+type ReconstructionMatchingMethod string
+
+// ReconstructionSoftwareName defines model for ReconstructionSoftwareName.
+type ReconstructionSoftwareName string
 
 // ResultFileURL defines model for ResultFileURL.
 type ResultFileURL struct {
@@ -135,6 +271,12 @@ type SubmitJobResponse struct {
 	Job     JobDetails `json:"job"`
 }
 
+// Training3DIsp defines model for Training3DIsp.
+type Training3DIsp string
+
+// TrainingModel defines model for TrainingModel.
+type TrainingModel string
+
 // ListJobsParams defines parameters for ListJobs.
 type ListJobsParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -151,6 +293,9 @@ type LoginJSONRequestBody = LoginRequest
 
 // SubmitJobJSONRequestBody defines body for SubmitJob for application/json ContentType.
 type SubmitJobJSONRequestBody = SubmitJobRequest
+
+// PutStandardPipelineSettingsJSONRequestBody defines body for PutStandardPipelineSettings for application/json ContentType.
+type PutStandardPipelineSettingsJSONRequestBody = PipelineSettings
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -178,6 +323,12 @@ type ServerInterface interface {
 	// Retry a failed/cancelled job
 	// (POST /v1/jobs/{job_id}/retry)
 	RetryJob(c *gin.Context, jobId string)
+	// Get standard pipeline settings (falls back to defaults when absent)
+	// (GET /v1/pipeline-settings/standard)
+	GetStandardPipelineSettings(c *gin.Context)
+	// Save standard pipeline settings for current user
+	// (PUT /v1/pipeline-settings/standard)
+	PutStandardPipelineSettings(c *gin.Context)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -381,6 +532,36 @@ func (siw *ServerInterfaceWrapper) RetryJob(c *gin.Context) {
 	siw.Handler.RetryJob(c, jobId)
 }
 
+// GetStandardPipelineSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetStandardPipelineSettings(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetStandardPipelineSettings(c)
+}
+
+// PutStandardPipelineSettings operation middleware
+func (siw *ServerInterfaceWrapper) PutStandardPipelineSettings(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PutStandardPipelineSettings(c)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -416,4 +597,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/jobs/:job_id/cancel", wrapper.CancelJob)
 	router.GET(options.BaseURL+"/v1/jobs/:job_id/result-urls", wrapper.GetJobResultUrls)
 	router.POST(options.BaseURL+"/v1/jobs/:job_id/retry", wrapper.RetryJob)
+	router.GET(options.BaseURL+"/v1/pipeline-settings/standard", wrapper.GetStandardPipelineSettings)
+	router.PUT(options.BaseURL+"/v1/pipeline-settings/standard", wrapper.PutStandardPipelineSettings)
 }

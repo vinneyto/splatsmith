@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -192,6 +193,58 @@ func (s *APIServer) GetJobResultUrls(c *gin.Context, jobID string, params GetJob
 	c.JSON(http.StatusOK, JobResultURLsResponse{Items: respItems})
 }
 
+func (s *APIServer) GetStandardPipelineSettings(c *gin.Context) {
+	identity, ok := s.authenticate(c)
+	if !ok {
+		return
+	}
+
+	settings, err := s.deps.PipelineSettingsService.GetStandard(c.Request.Context(), identity.UserID)
+	if err != nil {
+		s.writeDomainError(c, err)
+		return
+	}
+
+	apiSettings, err := toAPIPipelineSettings(settings)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, PipelineSettingsResponse{Settings: apiSettings})
+}
+
+func (s *APIServer) PutStandardPipelineSettings(c *gin.Context) {
+	identity, ok := s.authenticate(c)
+	if !ok {
+		return
+	}
+
+	var req PutStandardPipelineSettingsJSONRequestBody
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid json body"})
+		return
+	}
+
+	coreSettings, err := toCorePipelineSettings(req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid pipeline settings payload"})
+		return
+	}
+
+	saved, err := s.deps.PipelineSettingsService.SaveStandard(c.Request.Context(), identity.UserID, coreSettings)
+	if err != nil {
+		s.writeDomainError(c, err)
+		return
+	}
+
+	apiSettings, err := toAPIPipelineSettings(saved)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, PipelineSettingsResponse{Settings: apiSettings})
+}
+
 func (s *APIServer) authenticate(c *gin.Context) (core.UserIdentity, bool) {
 	identity, err := s.deps.AuthService.Authenticate(c.Request.Context(), c.GetHeader("Authorization"))
 	if err != nil {
@@ -263,4 +316,28 @@ func utcPtr(v *time.Time) *time.Time {
 	}
 	u := v.UTC()
 	return &u
+}
+
+func toCorePipelineSettings(in PipelineSettings) (core.PipelineSettings, error) {
+	b, err := json.Marshal(in)
+	if err != nil {
+		return core.PipelineSettings{}, err
+	}
+	var out core.PipelineSettings
+	if err := json.Unmarshal(b, &out); err != nil {
+		return core.PipelineSettings{}, err
+	}
+	return out, nil
+}
+
+func toAPIPipelineSettings(in core.PipelineSettings) (PipelineSettings, error) {
+	b, err := json.Marshal(in)
+	if err != nil {
+		return PipelineSettings{}, err
+	}
+	var out PipelineSettings
+	if err := json.Unmarshal(b, &out); err != nil {
+		return PipelineSettings{}, err
+	}
+	return out, nil
 }

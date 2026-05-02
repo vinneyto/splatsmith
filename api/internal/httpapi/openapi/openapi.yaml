@@ -185,6 +185,122 @@ components:
       properties:
         error:
           type: string
+    ReconstructionSoftwareName:
+      type: string
+      enum: [glomap, colmap]
+    ReconstructionMatchingMethod:
+      type: string
+      enum: [sequential, exhaustive, spatial, vocab_tree, transitive]
+    TrainingModel:
+      type: string
+      enum: [splatfacto]
+    Training3DIsp:
+      type: string
+      enum: [none]
+    PostProcessingCropMode:
+      type: string
+      enum: [environment]
+    CoordinateSystem:
+      type: string
+      enum: [rhyu]
+    BackgroundRemovalModel:
+      type: string
+      enum: [u2net]
+    ObjectRemovalAction:
+      type: string
+      enum: [erase]
+    PipelineSettings:
+      type: object
+      required: [videoProcessing, reconstruction, training, postProcessing, sphericalCamera, segmentation]
+      properties:
+        videoProcessing:
+          type: object
+          required: [maxNumImages, videoStartTime, videoStopTime, filterBlurryImages]
+          properties:
+            maxNumImages: { type: integer }
+            videoStartTime: { type: integer }
+            videoStopTime: { type: integer, description: "-1 means unset" }
+            filterBlurryImages: { type: boolean }
+        reconstruction:
+          type: object
+          required: [enable, softwareName, enableEnhancedFeatureExtraction, matchingMethod, enableFlHeuristic, flHeuristicValue, enableFlMetric, flMetricValue, posePriors]
+          properties:
+            enable: { type: boolean }
+            softwareName: { $ref: '#/components/schemas/ReconstructionSoftwareName' }
+            enableEnhancedFeatureExtraction: { type: boolean }
+            matchingMethod: { $ref: '#/components/schemas/ReconstructionMatchingMethod' }
+            enableFlHeuristic: { type: boolean }
+            flHeuristicValue: { type: number }
+            enableFlMetric: { type: boolean }
+            flMetricValue: { type: number }
+            posePriors:
+              type: object
+              required: [usePosePriorColmapModelFiles, usePosePriorTransformJson]
+              properties:
+                usePosePriorColmapModelFiles: { type: boolean }
+                usePosePriorTransformJson:
+                  type: object
+                  required: [enable, sourceCoordinateName, poseIsWorldToCam]
+                  properties:
+                    enable: { type: boolean }
+                    sourceCoordinateName: { type: string }
+                    poseIsWorldToCam: { type: boolean }
+        training:
+          type: object
+          required: [enable, maxSteps, model, 3dIsp, preserveSceneScale, enableDepthLoss]
+          properties:
+            enable: { type: boolean }
+            maxSteps: { type: integer }
+            model: { $ref: '#/components/schemas/TrainingModel' }
+            3dIsp: { $ref: '#/components/schemas/Training3DIsp' }
+            preserveSceneScale: { type: boolean }
+            enableDepthLoss: { type: boolean }
+        postProcessing:
+          type: object
+          required: [cropOutputBounds, cropMode, cleanSplat, enableSpz, enableSog, enableUsdz, enableVideoExport, plyCoords, spzCoords, sogCoords, usdzCoords]
+          properties:
+            cropOutputBounds: { type: boolean }
+            cropMode: { $ref: '#/components/schemas/PostProcessingCropMode' }
+            cleanSplat: { type: boolean }
+            enableSpz: { type: boolean }
+            enableSog: { type: boolean }
+            enableUsdz: { type: boolean }
+            enableVideoExport: { type: boolean }
+            plyCoords: { $ref: '#/components/schemas/CoordinateSystem' }
+            spzCoords: { $ref: '#/components/schemas/CoordinateSystem' }
+            sogCoords: { $ref: '#/components/schemas/CoordinateSystem' }
+            usdzCoords: { $ref: '#/components/schemas/CoordinateSystem' }
+        sphericalCamera:
+          type: object
+          required: [enable, cubeFacesToRemove, optimizeSequentialFrameOrder]
+          properties:
+            enable: { type: boolean }
+            cubeFacesToRemove: { type: string }
+            optimizeSequentialFrameOrder: { type: boolean }
+        segmentation:
+          type: object
+          required: [backgroundRemoval, objectRemoval]
+          properties:
+            backgroundRemoval:
+              type: object
+              required: [enable, model, maskThreshold]
+              properties:
+                enable: { type: boolean }
+                model: { $ref: '#/components/schemas/BackgroundRemovalModel' }
+                maskThreshold: { type: number }
+            objectRemoval:
+              type: object
+              required: [enable, action, objects]
+              properties:
+                enable: { type: boolean }
+                action: { $ref: '#/components/schemas/ObjectRemovalAction' }
+                objects: { type: string }
+    PipelineSettingsResponse:
+      type: object
+      required: [settings]
+      properties:
+        settings:
+          $ref: '#/components/schemas/PipelineSettings'
 paths:
   /healthz:
     get:
@@ -225,6 +341,51 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '501':
           description: Not implemented for current runtime mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/pipeline-settings/standard:
+    get:
+      operationId: getStandardPipelineSettings
+      summary: Get standard pipeline settings (falls back to defaults when absent)
+      responses:
+        '200':
+          description: Standard pipeline settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineSettingsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      operationId: putStandardPipelineSettings
+      summary: Save standard pipeline settings for current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineSettings'
+      responses:
+        '200':
+          description: Standard pipeline settings saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineSettingsResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:

@@ -11,6 +11,7 @@ import (
 type authProviderStub struct{}
 type loginProviderStub struct{}
 type jobRepositoryStub struct{}
+type pipelineSettingsRepositoryStub struct{}
 type jobDispatcherStub struct{}
 type resultURLResolverStub struct{}
 
@@ -64,6 +65,26 @@ func (s *jobRepositoryStub) ResetForRetry(context.Context, string, string) (*cor
 
 func (s *jobDispatcherStub) Enqueue(context.Context, core.JobDispatchRequest) error {
 	return fmt.Errorf("aws dispatcher: %w", core.ErrNotImplemented)
+}
+
+func (s *pipelineSettingsRepositoryStub) List(context.Context, core.PipelineSettingsListFilter) ([]core.PipelineSettingsRecord, error) {
+	return nil, fmt.Errorf("aws pipeline settings repository: %w", core.ErrNotImplemented)
+}
+
+func (s *pipelineSettingsRepositoryStub) GetByID(context.Context, string, string) (*core.PipelineSettingsRecord, error) {
+	return nil, fmt.Errorf("aws pipeline settings repository: %w", core.ErrNotImplemented)
+}
+
+func (s *pipelineSettingsRepositoryStub) Create(context.Context, core.CreatePipelineSettingsInput) (*core.PipelineSettingsRecord, error) {
+	return nil, fmt.Errorf("aws pipeline settings repository: %w", core.ErrNotImplemented)
+}
+
+func (s *pipelineSettingsRepositoryStub) Update(context.Context, core.UpdatePipelineSettingsInput) (*core.PipelineSettingsRecord, error) {
+	return nil, fmt.Errorf("aws pipeline settings repository: %w", core.ErrNotImplemented)
+}
+
+func (s *pipelineSettingsRepositoryStub) Delete(context.Context, string, string) error {
+	return fmt.Errorf("aws pipeline settings repository: %w", core.ErrNotImplemented)
 }
 
 func (s *resultURLResolverStub) ResolveResultURL(context.Context, string, time.Duration) (core.ResultFileURL, error) {
