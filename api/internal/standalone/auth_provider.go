@@ -2,6 +2,7 @@ package standalone
 
 import (
 	"context"
+	"strings"
 
 	"github.com/vinneyto/splatmaker/api/internal/core"
 )
@@ -24,7 +25,18 @@ func NewDevAuthProvider(cfg Config) *DevAuthProvider {
 	}
 }
 
-func (p *DevAuthProvider) ValidateToken(_ context.Context, token string) (core.AuthClaims, error) {
+func (p *DevAuthProvider) ValidateHeaders(_ context.Context, headers map[string]string) (core.AuthClaims, error) {
+	authHeader := strings.TrimSpace(headers["Authorization"])
+	token := ""
+	if authHeader == "" {
+		token = p.devToken
+	} else {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || !strings.EqualFold(strings.TrimSpace(parts[0]), "Bearer") {
+			return core.AuthClaims{}, core.ErrInvalidToken
+		}
+		token = strings.TrimSpace(parts[1])
+	}
 	if token == "" || token != p.devToken {
 		return core.AuthClaims{}, core.ErrInvalidToken
 	}

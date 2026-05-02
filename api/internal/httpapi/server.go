@@ -66,16 +66,14 @@ func (s *APIServer) GetJobResultUrls(c *gin.Context, jobID string, params GetJob
 }
 
 func (s *APIServer) authenticate(c *gin.Context) (core.UserIdentity, bool) {
-	ctx := c.Request.Context()
-	req := core.AuthRequest{
-		AuthorizationHeader: c.GetHeader("Authorization"),
-		OIDCIdentityHeader:  c.GetHeader("X-Amzn-Oidc-Identity"),
-		OIDCDataHeader:      c.GetHeader("X-Amzn-Oidc-Data"),
+	headers := map[string]string{}
+	for k, values := range c.Request.Header {
+		if len(values) == 0 {
+			continue
+		}
+		headers[k] = values[0]
 	}
-	if s.deps.AuthRequestAdapter != nil {
-		ctx, req = s.deps.AuthRequestAdapter.Adapt(ctx, req)
-	}
-	identity, err := s.deps.AuthService.Authenticate(ctx, req.AuthorizationHeader)
+	identity, err := s.deps.AuthService.Authenticate(c.Request.Context(), headers)
 	if err != nil {
 		s.writeDomainError(c, err)
 		return core.UserIdentity{}, false

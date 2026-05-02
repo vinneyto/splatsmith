@@ -35,7 +35,6 @@ func main() {
 	apiModule := httpapi.NewModule(cfg.API, httpapi.Dependencies{
 		Mode:                string(runtime.Mode),
 		AuthService:         runtime.AuthService,
-		AuthRequestAdapter:  runtime.AuthRequestAdapter,
 		JobService:          runtime.JobService,
 		DefaultResultURLTTL: time.Duration(runtime.ResultURLTTL) * time.Second,
 	})

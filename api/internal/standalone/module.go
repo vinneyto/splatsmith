@@ -3,10 +3,9 @@ package standalone
 import "github.com/vinneyto/splatmaker/api/internal/core"
 
 type Module struct {
-	AuthProvider       core.AuthProvider
-	AuthRequestAdapter core.AuthRequestAdapter
-	JobRepository      core.JobRepository
-	ResultURLResolver  core.ResultURLResolver
+	AuthProvider      core.AuthProvider
+	JobRepository     core.JobRepository
+	ResultURLResolver core.ResultURLResolver
 
 	closers []func() error
 }
@@ -23,16 +22,10 @@ func NewModule(cfg Config) (*Module, error) {
 	}
 
 	devAuth := NewDevAuthProvider(cfg)
-	authReqAdapter, err := NewFixedTokenAuthRequestAdapter(cfg.DevToken, cfg.DevUserID, cfg.DevUserEmail)
-	if err != nil {
-		_ = repo.Close()
-		return nil, err
-	}
 	module := &Module{
-		AuthProvider:       devAuth,
-		AuthRequestAdapter: authReqAdapter,
-		JobRepository:      repo,
-		ResultURLResolver:  resolver,
+		AuthProvider:      devAuth,
+		JobRepository:     repo,
+		ResultURLResolver: resolver,
 		closers: []func() error{
 			repo.Close,
 		},

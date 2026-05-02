@@ -3,10 +3,9 @@ package aws
 import "github.com/vinneyto/splatmaker/api/internal/core"
 
 type Module struct {
-	AuthProvider       core.AuthProvider
-	AuthRequestAdapter core.AuthRequestAdapter
-	JobRepository      core.JobRepository
-	ResultURLResolver  core.ResultURLResolver
+	AuthProvider      core.AuthProvider
+	JobRepository     core.JobRepository
+	ResultURLResolver core.ResultURLResolver
 }
 
 func NewModule(cfg Config) (*Module, error) {
@@ -19,9 +18,8 @@ func NewModule(cfg Config) (*Module, error) {
 		return nil, err
 	}
 	return &Module{
-		AuthProvider:       NewALBAuthProvider(),
-		AuthRequestAdapter: NewALBAuthRequestAdapter(),
-		JobRepository:      repo,
-		ResultURLResolver:  resolver,
+		AuthProvider:      NewALBAuthProvider(),
+		JobRepository:     repo,
+		ResultURLResolver: resolver,
 	}, nil
 }

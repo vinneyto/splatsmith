@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/vinneyto/splatmaker/api/internal/core"
 	"github.com/vinneyto/splatmaker/api/internal/core/services"
 	"gopkg.in/yaml.v3"
 )
@@ -14,7 +13,6 @@ import (
 type Dependencies struct {
 	Mode                string
 	AuthService         *services.AuthService
-	AuthRequestAdapter  core.AuthRequestAdapter
 	JobService          *services.JobService
 	DefaultResultURLTTL time.Duration
 }
